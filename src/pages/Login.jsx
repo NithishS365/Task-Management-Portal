@@ -54,6 +54,7 @@ export const Login = () => {
                         Sign In
                     </button>
                     <button onClick={notify}> Click me </button>
+                    <button onClick={ () => navigate('/cal') } > dont Click me</button>
 
 
                     <p className="text-sm text-center text-gray-500 mt-6">
