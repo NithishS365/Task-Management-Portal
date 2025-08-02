@@ -24,7 +24,7 @@ export const Profile = () => {
         {/* Profile Info Section */}
         <div className="px-6 pt-8 pb-6 grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 text-gray-700 text-sm">
           <div>
-            <p className="text-gray-500 font-medium">Admin ID</p>
+            <p className="text-gray-500 font-medium">User ID</p>
             <p className="text-indigo-800 font-semibold">110A</p>
           </div>
 
