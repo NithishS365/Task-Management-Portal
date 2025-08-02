@@ -1,0 +1,5 @@
+export { Dashboard } from "./Dashboard" 
+export { Home } from "./Home"
+export { TaskPortal } from "./TaskPortal"
+export { TaskAllocate } from "./TaskAllocate"
+export { Profile } from "./Profile"
