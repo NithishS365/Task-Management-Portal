@@ -9,7 +9,8 @@ export default {
       fontFamily:{
         Lime:["LimeLight"],
         Altasi:["Alatsi"],
-        Archivo:["Archivo"]
+        Archivo:["Archivo"],
+        Montserrat:["Montserrat"]
       }
     },
   },
