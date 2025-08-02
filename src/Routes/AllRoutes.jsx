@@ -1,5 +1,5 @@
 import React from 'react'
-import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,Home } from '../pages'
+import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,Home ,ToDoList} from '../pages'
 import { Route,Routes } from "react-router-dom"
 import { Register } from '../pages/Register'
 
@@ -14,6 +14,7 @@ export const AllRoutes = () => {
               <Route index element={<Home />} />
               <Route path='cal' element={<Cal />} />
               <Route path='allocate' element={<TaskAllocate />} />
+              <Route path='todo' element={<ToDoList/>} ></Route>
             <Route path='portal' element={<TaskPortal />} />
             <Route path='profile' element={<Profile />} />
             

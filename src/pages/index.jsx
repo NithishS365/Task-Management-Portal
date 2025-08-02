@@ -5,3 +5,4 @@ export { Cal } from './Cal'
 export { TaskPortal } from "./TaskPortal"
 export { TaskAllocate } from "./TaskAllocate"
 export { Profile } from "./Profile"
+export { ToDoList } from "./ToDoList"
