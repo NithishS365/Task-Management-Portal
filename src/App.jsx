@@ -11,7 +11,7 @@ function App() {
 
   return (
     <>
-    <div className="font-Montserrat">
+    <div className="font-Montserrat bg-gray-100">
       <AllRoutes />
   
     </div>

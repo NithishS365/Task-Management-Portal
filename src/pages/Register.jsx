@@ -42,7 +42,7 @@ export const Register = () => {
         className="w-full mb-6 px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600"
       />
 
-      <button className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition">
+      <button className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition" onClick={() => navigate('/login')}>
         Sign Up
       </button>
 
@@ -56,7 +56,7 @@ export const Register = () => {
 
     <div className="w-1/2 bg-gradient-to-br from-blue-400 to-blue-700 hidden md:flex items-center justify-center p-5">
 
-      <video width={600} height={100} src="" autoPlay loop className='rounded-2xl'>
+      <video width={600} height={100}  autoPlay loop className='rounded-2xl'>
             <source src={user1} type='video/mp4' className="max-h-[100%] max-w-[100%]" />
       </video>
     </div>

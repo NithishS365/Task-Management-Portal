@@ -15,7 +15,7 @@ export const Login = () => {
     return (
         <>
             <ToastContainer />
-             <div className="flex justify-center items-center mt-20">
+             <div className="flex justify-center items-center mt-20 bg-white">
  
                 <div className="bg-white rounded-2xl shadow-xl shadow-slate-500  overflow-hidden flex w-full max-w-5xl">
 
@@ -54,7 +54,6 @@ export const Login = () => {
                         Sign In
                     </button>
                     <button onClick={notify}> Click me </button>
-                    <button onClick={ () => navigate('/cal') } > dont Click me</button>
 
 
                     <p className="text-sm text-center text-gray-500 mt-6">
@@ -64,7 +63,7 @@ export const Login = () => {
                 </div>
 
                 <div className="w-1/2 bg-gradient-to-br from-purple-400 to-indigo-500 hidden md:flex items-center justify-center p-10 rounded-lg">
-                    <video width={600} height={100} src="" autoPlay loop className='rounded-2xl'>
+                    <video width={600} height={100}  autoPlay loop className='rounded-2xl'>
                         <source src={user} type='video/mp4' className="max-h-[90%] max-w-[100%]" />
                     </video>
                 </div>
