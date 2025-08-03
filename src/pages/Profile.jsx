@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Header } from '../components/Header';
 import Img from '../assets/cuteboy.png';
 
 export const Profile = () => {
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const currentEmail = localStorage.getItem('currentUser');
+    const allUsers = JSON.parse(localStorage.getItem('users')) || {};
+
+    if (currentEmail && allUsers[currentEmail]) {
+      setUserData(allUsers[currentEmail]);
+    }
+  }, []);
+
+  if (!userData) {
+    return (
+      <div className="h-screen flex justify-center items-center text-gray-600 text-xl">
+        No user data found. Please log in.
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-100 overflow-auto h-screen">
       <Header />
@@ -24,54 +43,26 @@ export const Profile = () => {
         {/* Profile Info Section */}
         <div className="px-6 pt-8 pb-6 grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 text-gray-700 text-sm">
           <div>
-            <p className="text-gray-500 font-medium">User ID</p>
-            <p className="text-indigo-800 font-semibold">110A</p>
-          </div>
-
-          <div>
             <p className="text-gray-500 font-medium">Full Name</p>
-            <p className="text-indigo-800 font-semibold">Nithish S</p>
-          </div>
-
-          <div>
-            <p className="text-gray-500 font-medium">Role</p>
-            <p className="text-indigo-800 font-semibold">Administrator</p>
-          </div>
-
-          <div>
-            <p className="text-gray-500 font-medium">Gender</p>
-            <p className="text-indigo-800 font-semibold">Male</p>
-          </div>
-
-          <div>
-            <p className="text-gray-500 font-medium">Date of Birth</p>
-            <p className="text-indigo-800 font-semibold">15 August 2002</p>
+            <p className="text-indigo-800 font-semibold">{userData.fullName}</p>
           </div>
 
           <div>
             <p className="text-gray-500 font-medium">Email Address</p>
-            <p className="text-indigo-800 font-semibold">abc123@gmail.com</p>
-          </div>
-
-          <div>
-            <p className="text-gray-500 font-medium">Phone Number</p>
-            <p className="text-indigo-800 font-semibold">984123XXXX</p>
-          </div>
-
-          <div>
-            <p className="text-gray-500 font-medium">Address</p>
-            <p className="text-indigo-800 font-semibold">Pollachi, Tamil Nadu, India</p>
-          </div>
-
-          <div>
-            <p className="text-gray-500 font-medium">Username</p>
-            <p className="text-indigo-800 font-semibold">nithish_admin</p>
+            <p className="text-indigo-800 font-semibold">{userData.email}</p>
           </div>
 
           <div>
             <p className="text-gray-500 font-medium">Password</p>
-            <p className="text-indigo-800 font-semibold">********</p>
+            <p className="text-indigo-800 font-semibold"></p>
           </div>
+
+          <div>
+            <p className="text-gray-500 font-medium">Role</p>
+            <p className="text-indigo-800 font-semibold">User</p>
+          </div>
+
+          {/* Optional: Add more fields if saved during registration */}
         </div>
 
         {/* Edit Button */}

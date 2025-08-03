@@ -27,7 +27,7 @@ export const AddTask = ({ tasks, setTasks, task, setTask }) => {
   };
 
   return (
-    <section className="flex font-Montserrat justify-center items-center mt-20">
+    <section className="flex font-Montserrat justify-center items-center mt-6">
       <form
         onSubmit={handletask}
         className="bg-white min-w-[900px] text-black flex justify-evenly items-center px-4 py-5 shadow-md rounded-3xl"

@@ -14,7 +14,7 @@ export const ShowTask = ({ tasks, setTasks, task, setTask }) => {
       <div className="flex justify-center items-center">
         <div className="flex items-center text-2xl font-semibold">
           <span>Todo</span>
-          <span className="bg-gray-500 text-white ml-4 px-3 py-1 rounded-full text-sm">
+          <span className="bg-gray-500 text-white ml-4 px-3 py-1 rounded-md text-sm">
             {tasks.length}
           </span>
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { FaFileExport, FaFilter } from "react-icons/fa";
+import { FaFileExport } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
+import { IoNotifications } from "react-icons/io5";
 
 const Header = () => {
   const location = useLocation();
@@ -43,14 +44,15 @@ const Header = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
+          <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-200 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
             <FaFileExport className="w-4 h-4" />
             Export
           </button>
-          <button className="bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
-            <FaFilter className="w-4 h-4" />
-            Filter
+          <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-200 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
+             <IoNotifications className="w-4 h-4" />
+            Notifications
           </button>
+         
           <img
             src="https://randomuser.me/api/portraits/men/1.jpg"
             alt="User"

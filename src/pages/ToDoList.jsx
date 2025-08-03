@@ -15,7 +15,7 @@ export const ToDoList = () => {
     <>
     < Header />
     <main className="ml-24 ">
-        <h1 className='text-center text-indigo-600 font-bold text-lg mb-4'>Create Your TO-DO List</h1>
+        <h1 className='text-center text-2xl text-indigo-600 font-bold  '>Create Your TO-DO List</h1>
       <AddTask tasks={tasks} setTasks={setTasks} task={task} setTask={setTask} />
       <ShowTask tasks={tasks} setTasks={setTasks} task={task} setTask={setTask} />
     </main>
