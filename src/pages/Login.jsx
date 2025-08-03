@@ -71,7 +71,7 @@ export const Login = () => {
           </div>
 
           <div className="w-1/2 bg-gradient-to-br from-purple-400 to-indigo-500 hidden md:flex items-center justify-center p-10 rounded-lg">
-            <video width={600} height={100} autoPlay loop className='rounded-2xl'>
+            <video width={600} height={100} muted autoPlay loop className='rounded-2xl'>
               <source src={user} type='video/mp4' />
             </video>
           </div>

@@ -1,25 +1,7 @@
 import { useState } from "react";
 import { Header } from "../components/Header";
 
-export const TaskPortal = () => {
-  const datePlusTwo = new Date();
-  datePlusTwo.setDate(datePlusTwo.getDate() + Math.floor(Math.random()*10));
-  const dueDate = datePlusTwo.toLocaleDateString();
-
-  const [tasks, setTasks] = useState([
-    { sno: 1, taskname: "Abc", submitted: "-", approved: "-", due: dueDate },
-    { sno: 2, taskname: "Def", submitted: "S", approved: "-", due: dueDate },
-    { sno: 3, taskname: "Abc", submitted: "-", approved: "A", due: dueDate },
-    { sno: 4, taskname: "Def", submitted: "S", approved: "-", due: dueDate },
-    { sno: 5, taskname: "Abc", submitted: "-", approved: "-", due: dueDate },
-    { sno: 6, taskname: "Def", submitted: "-", approved: "A", due: dueDate },
-    { sno: 7, taskname: "Abc", submitted: "S", approved: "-", due: dueDate },
-    { sno: 8, taskname: "Def", submitted: "-", approved: "A", due: dueDate },
-    { sno: 9, taskname: "Abc", submitted: "-", approved: "-", due: dueDate },
-    { sno: 10, taskname: "Def", submitted: "S", approved: "-", due: dueDate },
-    { sno: 11, taskname: "Abc", submitted: "-", approved: "-", due: dueDate },
-    { sno: 12, taskname: "Def", submitted: "S", approved: "-", due: dueDate }
-  ]);
+export const TaskPortal = ({tasks,setTasks}) => {
 
   const [filter,setFilter] = useState("");
   const [searchText, setSearchText] = useState("");

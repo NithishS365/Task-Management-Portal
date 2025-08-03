@@ -6,14 +6,26 @@ import { IoNotifications } from "react-icons/io5";
 const Header = () => {
   const location = useLocation();
   const [headerClass, setHeaderClass] = useState("p-3 bg-gray-100  transition-all duration-300");
-
+  const [fullName, setFullName] = useState('');
   useEffect(() => {
     if (location.pathname === "/dashboard") {
       setHeaderClass("bg-gray-100 ");
     } else {
-      setHeaderClass("p-3 bg-gray-100 transition-all duration-300");
+      setHeaderClass("p-3 bg-gray-100 transition-all duration-300 ");
     }
-  }, [location.pathname]);
+  }, [location.pathname]
+);
+
+useEffect(() => {
+    const email = localStorage.getItem('currentUser'); // email of logged-in user
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+
+    if (email && users[email]) {
+      setFullName(users[email].fullName); // ✅ correct way to access fullName
+    }
+  }, []);
+
+  
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -28,7 +40,7 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <div>
             <h1 className="text-lg font-bold text-gray-800 mb-0">
-              Welcome back, Admin!
+              Welcome back,{fullName || 'Admin'} !
             </h1>
             <p className="text-gray-500 text-xs">
               Dashboard Overview &mdash; {today}
@@ -44,11 +56,11 @@ const Header = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-200 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
+          <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
             <FaFileExport className="w-4 h-4" />
             Export
           </button>
-          <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-200 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
+          <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300 text-gray-600 text-xs font-medium flex items-center gap-1 shadow-sm">
              <IoNotifications className="w-4 h-4" />
             Notifications
           </button>

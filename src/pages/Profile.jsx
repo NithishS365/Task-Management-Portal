@@ -27,7 +27,7 @@ export const Profile = () => {
       <Header />
 
       <div className="max-w-4xl mx-auto mt-10 bg-white shadow-lg rounded-2xl overflow-hidden">
-        {/* Header Section */}
+
         <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 flex justify-between items-center rounded-t-2xl">
           <div>
             <h2 className="text-white text-xl font-bold">Admin Profile</h2>
@@ -40,7 +40,7 @@ export const Profile = () => {
           />
         </div>
 
-        {/* Profile Info Section */}
+
         <div className="px-6 pt-8 pb-6 grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 text-gray-700 text-sm">
           <div>
             <p className="text-gray-500 font-medium">Full Name</p>
@@ -54,7 +54,7 @@ export const Profile = () => {
 
           <div>
             <p className="text-gray-500 font-medium">Password</p>
-            <p className="text-indigo-800 font-semibold"></p>
+            <p className="text-indigo-800 font-semibold"> *******</p>
           </div>
 
           <div>
@@ -62,10 +62,9 @@ export const Profile = () => {
             <p className="text-indigo-800 font-semibold">User</p>
           </div>
 
-          {/* Optional: Add more fields if saved during registration */}
         </div>
 
-        {/* Edit Button */}
+
         <div className="px-6 py-4 flex justify-end">
           <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-6 py-2 rounded-md shadow">
             Edit Profile

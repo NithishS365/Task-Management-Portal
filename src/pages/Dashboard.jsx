@@ -10,16 +10,16 @@ export const Dashboard = () => {
     navigate('/');
   }
 
-  const inactive = "flex mx-5 my-5 text-gray-300 font-medium fill-gray-300 ";
+  const inactive = "flex mx-5 my-5 text-gray-400 font-medium fill-gray-400 ";
   const active = "flex mx-5 my-5 text-indigo-500 font-bold fill-indigo-700 border border-t-0 border-b-0 border-l-0 border-r-3 ";
   
 
   return (
     <>
-    <div className='flex'>
-    <aside className='flex flex-col py-5  px-4 w-[230px] bg-white shadow-md shadow-black '>
+    <div className='flex '>
+    <aside className='flex flex-col py-5  px-4 w-[230px] bg-white '>
             <Link to="/" className='flex justify-center items-center' >
-            <img src={logo} width={50} />
+            <img src={logo} width={40} />
             <h1 className='text text-4xl font-mono font-bold'>TaskRise</h1>
             </Link>
             <div className='flex flex-col pt-20 w-80 font-Montserrat text-xl  '>

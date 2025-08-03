@@ -1,17 +1,23 @@
-import React from 'react'
 import { useState } from 'react';
 import { Header } from '../components/Header';
+import { useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 
-export const TaskAllocate = () => {
+export const TaskAllocate = ({tasks,setTasks}) => {
 
     const [formData, setFormData] = useState({
-    taskId: "",
-    taskName: "",
-    description: "",
-    assignedTo: "",
-    dueDate: "",
-    notes: "",
+    sno: "",
+    taskname: "",
+    submitted: "-",
+    approved: "-",
+    due: ""
   });
+
+  useEffect(() => {
+    const nsno = tasks.length > 0 ? tasks[tasks.length - 1].sno + 1 : 1;
+    setFormData((prev) => ({ ...prev, sno: nsno }));
+  }, [tasks]); // runs only when 'tasks' changes
+
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -23,12 +29,23 @@ export const TaskAllocate = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Submitted Task:", formData);
-    // You can connect this with your backend or API call here.
+    setTasks([...tasks,formData]);
+
+    setFormData({
+    sno: "",
+    taskname: "",
+    submitted: "-",
+    approved: "-",
+    due: ""
+  });
+
+    toast.info("Data Added Successfully")
   };
 
   return (
     <>
     <Header />
+    < ToastContainer />
      <div className=" bg-gray-100  flex justify-center items-start">
       <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-2xl animate-fadeIn">
         <h2 className="text-2xl font-bold text-indigo-600 mb-1 text-center">
@@ -41,9 +58,6 @@ export const TaskAllocate = () => {
             <input
               type="text"
               name="taskId"
-              value={formData.taskId}
-              onChange={handleChange}
-              required
               className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
             />
           </div>
@@ -52,8 +66,8 @@ export const TaskAllocate = () => {
             <label className="block text-sm font-medium text-gray-700">Task Name</label>
             <input
               type="text"
-              name="taskName"
-              value={formData.taskName}
+              name="taskname"
+              value={formData.taskname}
               onChange={handleChange}
               required
               className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
@@ -64,10 +78,8 @@ export const TaskAllocate = () => {
             <label className="block text-sm font-medium text-gray-700">Task Description</label>
             <textarea
               name="description"
-              value={formData.description}
-              onChange={handleChange}
               rows="1"
-              required
+              
               className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
             ></textarea>
           </div>
@@ -77,9 +89,7 @@ export const TaskAllocate = () => {
             <input
               type="text"
               name="assignedTo"
-              value={formData.assignedTo}
-              onChange={handleChange}
-              required
+              
               className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
               placeholder="Member name or ID"
             />
@@ -89,8 +99,8 @@ export const TaskAllocate = () => {
             <label className="block text-sm font-medium text-gray-700">Due Date</label>
             <input
               type="date"
-              name="dueDate"
-              value={formData.dueDate}
+              name="due"
+              value={formData.due}
               onChange={handleChange}
               required
               className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
