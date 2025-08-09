@@ -3,7 +3,7 @@ import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,Home ,ToDoList} fro
 import { Route,Routes } from "react-router-dom"
 import { Register } from '../pages/Register'
 import { useState } from 'react'
-
+import { Hod_Dash } from '../pages/Hod_Dash'
 
 export const AllRoutes = () => {
     
@@ -46,7 +46,8 @@ export const AllRoutes = () => {
             </Route>
             <Route path='/Register' element={<Register />} />
             <Route path='/Login' element={<Login />} />
-            
+            <Route path='/Hod_Dash' element={<Hod_Dash />} />
+        
         </Routes>
     
     </>

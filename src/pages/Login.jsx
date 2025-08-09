@@ -56,9 +56,15 @@ export const Login = () => {
               </label>
               <a className="hover:underline">Forgot Password?</a>
             </div>
+            <label className="flex mr-2 items-center space-x-2 mb-4" />
+              <input type="radio" name="HoD" id="" />
+              <span className="text-gray-700">HoD</span>
+            <label className=" items-center space-x-2 mb-4" />
+            <input type="radio" name="Faculty" id="" />
+              <span className="text-gray-700">Faculty</span>
 
             <button
-              className="w-full bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition"
+              className="w-full mt-4  bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition"
               onClick={handleLogin}
             >
               Sign In

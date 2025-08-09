@@ -140,7 +140,7 @@ export function Home() {
                         <div className="my-2" />
 
                         {/* Bottom Section: Charts */}
-                        <div className="grid grid-cols-2 gap-2 h-[34%]">
+                        <div className="grid grid-cols-2 gap-2 h-[35%]">
                                 {/* Line Chart */}
                                 <div className="bg-white rounded-xl p-4 shadow">
                                         <h3 className="text-center  text-indigo-600 font-bold text-lg  mb-2">Task Completion Over Time</h3>
