@@ -1,134 +1,204 @@
-import { useState } from 'react';
-import { Header } from '../components/Header';
-import { useEffect } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
+import React, { useState } from "react";
+import staffData from "../Data/Staff.json";
+import { Dialog } from "@headlessui/react";
+import { Header } from "../components/Header";
 
-export const TaskAllocate = ({tasks,setTasks}) => {
+export function TaskAllocate() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState([]);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [subject, setSubject] = useState("");
+  const [taskDesc, setTaskDesc] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
-    const [formData, setFormData] = useState({
-    sno: "",
-    taskname: "",
-    submitted: "-",
-    approved: "-",
-    due: ""
-  });
-
-  useEffect(() => {
-    const nsno = tasks.length > 0 ? tasks[tasks.length - 1].sno + 1 : 1;
-    setFormData((prev) => ({ ...prev, sno: nsno }));
-  }, [tasks]); // runs only when 'tasks' changes
-
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+  const toggleStaffSelection = (staff) => {
+    setSelectedStaff((prev) =>
+      prev.some((s) => s.email === staff.email)
+        ? prev.filter((s) => s.email !== staff.email)
+        : [...prev, staff]
+    );
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Submitted Task:", formData);
-    setTasks([...tasks,formData]);
+  const assignTask = () => {
+    if (!taskTitle || !taskDesc || !category || selectedStaff.length === 0 || !dueDate) {
+      alert("Please fill all fields and select at least one staff.");
+      return;
+    }
 
-    setFormData({
-    sno: "",
-    taskname: "",
-    submitted: "-",
-    approved: "-",
-    due: ""
-  });
+    // Prepare the task object
+    const newTask = {
+      sno: Date.now(),
+      taskname: taskTitle,
+      description: taskDesc,
+      status: "allocated",
+      due: dueDate,
+      category,
+      subject,
+      attachments: [],
+    };
 
-    toast.info("Data Added Successfully")
+    // Save to localStorage for TaskPortal to pick up
+    // We'll use a key 'taskportal_tasks' to store all allocated tasks
+    const prevTasks = JSON.parse(localStorage.getItem("taskportal_tasks") || "[]");
+    localStorage.setItem("taskportal_tasks", JSON.stringify([...prevTasks, newTask]));
+
+    alert("Task Assigned Successfully!");
+    setTaskTitle("");
+    setTaskDesc("");
+    setCategory("");
+    setSubject("");
+    setDueDate("");
+    setSelectedStaff([]);
   };
 
   return (
     <>
     <Header />
-    < ToastContainer />
-     <div className=" bg-gray-100  flex justify-center items-start">
-      <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-2xl animate-fadeIn">
-        <h2 className="text-2xl font-bold text-indigo-600 mb-1 text-center">
-          Task Allocation Form
-        </h2>
+    <div className=" bg-gray-100 flex flex-col items-center py-6">
+      {/* Card Container */}
+      <div className="bg-white rounded-2xl shadow-md shadow-gray-300 w-full max-w-3xl p-8">
+        <h1 className="text-3xl font-semibold text-gray-800 mb-8 text-center">
+          Task Allocation
+        </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Task ID</label>
-            <input
-              type="text"
-              name="taskId"
-              className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
+        {/* Task Title */}
+        <input
+          type="text"
+          placeholder="Task Title"
+          value={taskTitle}
+          onChange={(e) => setTaskTitle(e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-lg shadow-sm mb-5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Task Name</label>
-            <input
-              type="text"
-              name="taskname"
-              value={formData.taskname}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
+        {/* Category & Subject in One Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">Select Category</option>
+            <option>Academics</option>
+            <option>Placements</option>
+            <option>Event Organisation</option>
+            <option>COE</option>
+            <option>Exam</option>
+            <option>Student achievement</option>
+            <option>Faculty achievement</option>
+          </select>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Task Description</label>
-            <textarea
-              name="description"
-              rows="1"
-              
-              className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            ></textarea>
-          </div>
+          <input
+            type="text"
+            placeholder="Subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Assign To</label>
-            <input
-              type="text"
-              name="assignedTo"
-              
-              className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              placeholder="Member name or ID"
-            />
-          </div>
+        {/* Task Description */}
+        <textarea
+          placeholder="Enter task description*"
+          value={taskDesc}
+          onChange={(e) => setTaskDesc(e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-lg shadow-sm mb-5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          rows="4"
+        />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Due Date</label>
-            <input
-              type="date"
-              name="due"
-              value={formData.due}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
+        {/* Due Date */}
+        <div className="mb-6">
+          <label className="block text-gray-700 font-medium mb-2">
+            Due Date
+          </label>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="border border-gray-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Additional Notes</label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows="1"
-              className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            ></textarea>
+        {/* Selected Staff Preview */}
+        {selectedStaff.length > 0 && (
+          <div className="flex flex-wrap gap-3 mb-6">
+            {selectedStaff.map((staff) => (
+              <div
+                key={staff.email}
+                className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-full shadow-sm"
+              >
+                <img
+                  src={staff.img_url}
+                  alt={staff.t_name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <span className="text-sm font-medium text-gray-800">
+                  {staff.t_name}
+                </span>
+              </div>
+            ))}
           </div>
+        )}
 
-          <div className="text-center">
-            <button
-              type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg transition-all duration-300"
-            >
-              Allocate Task
-            </button>
-          </div>
-        </form>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+          >
+            Select Staff
+          </button>
+          <button
+            onClick={assignTask}
+            className="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg shadow hover:bg-green-700 transition duration-200"
+          >
+            Assign Task
+          </button>
+        </div>
       </div>
+
+      {/* Staff Selection Modal */}
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
+            <Dialog.Title className="text-lg font-bold mb-4 text-gray-800">
+              Select Staff
+            </Dialog.Title>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {staffData.map((staff) => (
+                <div
+                  key={staff.email}
+                  onClick={() => toggleStaffSelection(staff)}
+                  className={`flex items-center gap-3 p-2 border rounded-lg cursor-pointer transition ${
+                    selectedStaff.some((s) => s.email === staff.email)
+                      ? "bg-blue-100 border-blue-400"
+                      : "hover:bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <img
+                    src={staff.img_url}
+                    alt={staff.t_name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <span className="font-medium text-gray-700">
+                    {staff.t_name}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+              >
+                Done
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
     </>
-  )
+  );
 }

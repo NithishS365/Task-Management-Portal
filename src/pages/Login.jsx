@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import user from "../assets/user.mp4";
 import { ToastContainer, toast } from 'react-toastify';
 import logo from "../assets/logo2.png"
+import hod from "../Data/hod.json";
+import staff from "../Data/Staff.json"
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -10,17 +12,29 @@ export const Login = () => {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    const userData = JSON.parse(localStorage.getItem('users')) || {};
-    const user = userData[email];
-
-    if (user && user.password === password) {
-      toast.success("Login successful!");
-      navigate("/dashboard");
-    } else {
-      toast.error("Invalid credentials!");
+    if((email === hod.email || email === hod.username) && password === hod.pwd) {
+      localStorage.setItem("currentRole", "hod");
+      localStorage.setItem("currentHodEmail", hod.email);
+      localStorage.setItem("currentHodUsername", hod.username);
+      navigate("/HodDash");
+      return;
     }
-    localStorage.setItem('currentUser', email);
 
+    const st = staff.find((people) => (people.email === email || people.username === email ) && people.pwd === password);
+
+    if(st) {
+      localStorage.setItem("currentRole", "faculty");
+      localStorage.setItem("currentStaffId", st.id || st.t_id);
+      localStorage.setItem("currentStaffEmail", st.email);
+      navigate("/dashboard");
+      return;
+    } else {
+      if(email === "" && password === "") {
+        toast.warn("Fill all details")
+      } else {
+        toast.error("Invalid email or password. Please try again");
+      }
+    }
   };
 
   return (
@@ -29,14 +43,13 @@ export const Login = () => {
       <div className="flex justify-center items-center mt-20 bg-white">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-500 overflow-hidden flex w-full max-w-5xl">
           <div className="w-full md:w-1/2 p-10">
-          
             <div className="text-purple-600 flex font-semibold text-2xl mb-6"><img src={logo} width={30} />TASKRISE</div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Hello, Welcome Back</h2>
             <p className="text-gray-500 mb-6">Your tasks missed you. Let’s rise to the challenge.</p>
 
             <input
               type="email"
-              placeholder="Enter Your email"
+              placeholder="Enter Your Username or Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full mb-4 px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600"
@@ -56,12 +69,12 @@ export const Login = () => {
               </label>
               <a className="hover:underline">Forgot Password?</a>
             </div>
-            <label className="flex mr-2 items-center space-x-2 mb-4" />
-              <input type="radio" name="HoD" id="" />
-              <span className="text-gray-700">HoD</span>
-            <label className=" items-center space-x-2 mb-4" />
-            <input type="radio" name="Faculty" id="" />
-              <span className="text-gray-700">Faculty</span>
+            <label className="flex mr-2 items-center space-x-2 ml-3 mb-4" />
+              <input type="checkbox" name="HoD" id="" />
+              <span className="text-gray-700 ml-0.5">Hod</span>
+            <label className=" items-center space-x-8 mb-4 ml-3" />
+            <input type="checkbox" name="Faculty" id="" />
+              <span className="text-gray-700 ml-0.5">Faculty</span>
 
             <button
               className="w-full mt-4  bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition"

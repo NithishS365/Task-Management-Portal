@@ -1,10 +1,9 @@
 import React from 'react'
-import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,Home ,ToDoList} from '../pages'
+import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,ProfileHod , Home ,ToDoList ,HodDash ,HodHome, FacultyOverview , TaskApproval} from '../pages'
 import { Route,Routes } from "react-router-dom"
-import { Register } from '../pages/Register'
 import { useState } from 'react'
-import { Hod_Dash } from '../pages/Hod_Dash'
-
+import { Card } from '../pages/Card'
+import { Staff_Stat } from '../pages/Staff_Stat'
 export const AllRoutes = () => {
     
     
@@ -14,18 +13,7 @@ export const AllRoutes = () => {
 
 
 
-    const [tasks, setTasks] = useState([
-      { sno: 1, taskname: "Prepare Exam Question Paper", submitted: "-", approved: "-", due: dueDate },
-      { sno: 2, taskname: "Upload Lecture Notes", submitted: "S", approved: "-", due: dueDate },
-      { sno: 3, taskname: "Organize Departmental Seminar", submitted: "-", approved: "A", due: dueDate },
-      { sno: 4, taskname: "Review Final Year Project", submitted: "S", approved: "-", due: dueDate },
-      { sno: 5, taskname: "Update Internal Marks in Portal", submitted: "-", approved: "-", due: dueDate },
-      { sno: 6, taskname: "Attend FDP Program", submitted: "-", approved: "A", due: dueDate },
-      { sno: 7, taskname: "Submit Research Papers", submitted: "S", approved: "-", due: dueDate },
-      { sno: 8, taskname: "Plan Industrial Visits", submitted: "-", approved: "A", due: dueDate },
-      { sno: 9, taskname: "Train students for Hackathon", submitted: "-", approved: "-", due: dueDate },
-      { sno: 10, taskname: "Verify Lab Records", submitted: "S", approved: "-", due: dueDate }
-    ]);
+   
   
 
   
@@ -37,17 +25,27 @@ export const AllRoutes = () => {
             <Route path='/dashboard' element={<Dashboard />} >
               <Route index element={<Home />} />
               <Route path='cal' element={<Cal />} />
-              <Route path='allocate' element={<TaskAllocate tasks={tasks} setTasks={setTasks} />} />
+              {/* <Route path='allocate' element={<TaskAllocate tasks={tasks} setTasks={setTasks} />} /> */}
               <Route path='todo' element={<ToDoList/>} ></Route>
-            <Route path='portal' element={<TaskPortal tasks={tasks} setTasks={setTasks}/>} />
-            <Route path='profile' element={<Profile />} />
-            
-            
+              <Route path='portal' element={<TaskPortal />} />
+              <Route path='profile' element={<Profile />} />
             </Route>
-            <Route path='/Register' element={<Register />} />
+            
+            {/* <Route path='/Register' element={<Register />} /> */}
             <Route path='/Login' element={<Login />} />
-            <Route path='/Hod_Dash' element={<Hod_Dash />} />
-        
+            <Route path='/HodDash' element={<HodDash />} />
+            <Route path='/Card' element={<Card />} />
+           
+
+            <Route path='/HodDash' element={<HodDash />} >
+              <Route index element={<HodHome />} />
+              <Route path='approval' element={<TaskApproval/>} ></Route>
+              <Route path='faculty_overview' element={<FacultyOverview/>}></Route>
+              <Route path='faculty_overview/staff/:id' element={<Staff_Stat />} />
+              <Route path='allocate' element={<TaskAllocate  />} />
+              <Route path='profileHod' element={<ProfileHod />} />  
+            </Route>
+
         </Routes>
     
     </>

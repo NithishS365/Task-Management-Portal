@@ -7,25 +7,33 @@ const Header = () => {
   const location = useLocation();
   const [headerClass, setHeaderClass] = useState("p-3 bg-gray-100  transition-all duration-300");
   const [fullName, setFullName] = useState('');
+
   useEffect(() => {
     if (location.pathname === "/dashboard") {
       setHeaderClass("bg-gray-100 ");
     } else {
       setHeaderClass("p-3 bg-gray-100 transition-all duration-300 ");
     }
-  }, [location.pathname]
-);
+  }, [location.pathname]);
 
-useEffect(() => {
-    const email = localStorage.getItem('currentUser'); // email of logged-in user
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-
-    if (email && users[email]) {
-      setFullName(users[email].fullName); // ✅ correct way to access fullName
+  useEffect(() => {
+    // Try to get name from localStorage for HoD or Staff
+    const role = localStorage.getItem('currentRole');
+    let name = '';
+    if (role === "hod") {
+      name = "HoD";
+    } else if (role === "faculty") {
+      name = localStorage.getItem("currentStaffUsername") || localStorage.getItem("currentStaffEmail") || "Faculty";
+    } else {
+      // fallback to users object if present
+      const email = localStorage.getItem('currentUser');
+      const users = JSON.parse(localStorage.getItem('users')) || {};
+      if (email && users[email]) {
+        name = users[email].fullName;
+      }
     }
+    setFullName(name);
   }, []);
-
-  
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -40,7 +48,7 @@ useEffect(() => {
         <div className="flex items-center gap-2">
           <div>
             <h1 className="text-lg font-bold text-gray-800 mb-0">
-              Welcome back,{fullName || 'Admin'} !
+              Welcome back, {fullName || 'Admin'}!
             </h1>
             <p className="text-gray-500 text-xs">
               Dashboard Overview &mdash; {today}
@@ -64,7 +72,6 @@ useEffect(() => {
              <IoNotifications className="w-4 h-4" />
             Notifications
           </button>
-         
           <img
             src="https://randomuser.me/api/portraits/men/1.jpg"
             alt="User"
