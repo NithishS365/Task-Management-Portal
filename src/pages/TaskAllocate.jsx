@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import staffData from "../Data/Staff.json";
 import { Dialog } from "@headlessui/react";
 import { Header } from "../components/Header";
+import { ToastContainer, toast } from 'react-toastify';
 
 export function TaskAllocate() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,7 +23,7 @@ export function TaskAllocate() {
 
   const assignTask = () => {
     if (!taskTitle || !taskDesc || !category || selectedStaff.length === 0 || !dueDate) {
-      alert("Please fill all fields and select at least one staff.");
+        toast.error("Please fill all fields and select at least one staff.");
       return;
     }
 
@@ -43,7 +44,7 @@ export function TaskAllocate() {
     const prevTasks = JSON.parse(localStorage.getItem("taskportal_tasks") || "[]");
     localStorage.setItem("taskportal_tasks", JSON.stringify([...prevTasks, newTask]));
 
-    alert("Task Assigned Successfully!");
+    toast.success("Task Assigned Successfully!");
     setTaskTitle("");
     setTaskDesc("");
     setCategory("");
@@ -54,6 +55,7 @@ export function TaskAllocate() {
 
   return (
     <>
+    <ToastContainer />
     <Header />
     <div className=" bg-gray-100 flex flex-col items-center py-6">
       {/* Card Container */}
