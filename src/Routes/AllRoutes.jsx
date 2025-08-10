@@ -1,9 +1,8 @@
 import React from 'react'
-import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,Home ,ToDoList} from '../pages'
+import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile, StaffHome ,ToDoList ,HodDash ,HodHome, FacultyOverview , TaskApproval} from '../pages'
 import { Route,Routes } from "react-router-dom"
 import { Register } from '../pages/Register'
 import { useState } from 'react'
-import { Hod_Dash } from '../pages/Hod_Dash'
 
 export const AllRoutes = () => {
     
@@ -35,18 +34,24 @@ export const AllRoutes = () => {
         <Routes >
             <Route path="/" element={< Login  /> } />
             <Route path='/dashboard' element={<Dashboard />} >
-              <Route index element={<Home />} />
+              <Route index element={<StaffHome />} />
               <Route path='cal' element={<Cal />} />
-              <Route path='allocate' element={<TaskAllocate tasks={tasks} setTasks={setTasks} />} />
               <Route path='todo' element={<ToDoList/>} ></Route>
             <Route path='portal' element={<TaskPortal tasks={tasks} setTasks={setTasks}/>} />
-            <Route path='profile' element={<Profile />} />
-            
-            
+            <Route path='profile' element={<Profile />} />  
             </Route>
-            <Route path='/Register' element={<Register />} />
-            <Route path='/Login' element={<Login />} />
-            <Route path='/Hod_Dash' element={<Hod_Dash />} />
+
+            {/* <Route path='/Register' element={<Register />} /> */}
+            
+            
+            <Route path='/HodDash' element={<HodDash />} >
+            <Route index element={<HodHome />} />
+            <Route path='approval' element={<TaskApproval/>} ></Route>
+            <Route path='faculty_overview' element={<FacultyOverview/>}></Route>
+            <Route path='allocate' element={<TaskAllocate tasks={tasks} setTasks={setTasks} />} />
+            <Route path='profile' element={<Profile />} />  
+            </Route>
+
         
         </Routes>
     

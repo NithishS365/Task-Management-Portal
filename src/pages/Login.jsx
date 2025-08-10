@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import user from "../assets/user.mp4";
 import { ToastContainer, toast } from 'react-toastify';
 import logo from "../assets/logo2.png"
+import hod from "../Data/hod.json";
+import staff from "../Data/staff.json"
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -10,16 +12,29 @@ export const Login = () => {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    const userData = JSON.parse(localStorage.getItem('users')) || {};
-    const user = userData[email];
 
-    if (user && user.password === password) {
-      toast.success("Login successful!");
-      navigate("/dashboard");
-    } else {
-      toast.error("Invalid credentials!");
+  
+    if(email == hod.email && password == hod.pwd)
+    {
+      navigate("/Hod_Dash");
     }
-    localStorage.setItem('currentUser', email);
+
+    const st = staff.find((people)=>people.email == email && people.pwd == password);
+
+    if(st)
+    {
+      navigate("/dashboard");
+    }
+    else{
+    
+    if(email=="" && password=="")
+    {
+      toast.warn("Fill all details")
+    }
+    else{
+      toast.error("Invalid email or password. Please try again");
+    }
+  }
 
   };
 
@@ -56,12 +71,12 @@ export const Login = () => {
               </label>
               <a className="hover:underline">Forgot Password?</a>
             </div>
-            <label className="flex mr-2 items-center space-x-2 mb-4" />
+            <label className="flex mr-2 items-center space-x-2 ml-3 mb-4" />
               <input type="radio" name="HoD" id="" />
-              <span className="text-gray-700">HoD</span>
-            <label className=" items-center space-x-2 mb-4" />
+              <span className="text-gray-700 ml-0.5">Hod</span>
+            <label className=" items-center space-x-8 mb-4 ml-3" />
             <input type="radio" name="Faculty" id="" />
-              <span className="text-gray-700">Faculty</span>
+              <span className="text-gray-700 ml-0.5">Faculty</span>
 
             <button
               className="w-full mt-4  bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition"

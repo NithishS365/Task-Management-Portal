@@ -21,7 +21,7 @@ setOptions({
         themeVariant: 'light'
 });
 
-export function Home() {
+export function HodHome() {
         const [myEvents, setEvents] = useState([]);
         const [isToastOpen, setToastOpen] = useState(false);
         const [toastText, setToastText] = useState();
