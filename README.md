@@ -19,13 +19,6 @@ Welcome to **TaskRise**, a modern, full-featured web application designed to str
 
 ---
 
-## 🖼️ Screenshots
-
-| Login Page | Dashboard | Task Portal | Task Approval | Profile |
-|:----------:|:---------:|:-----------:|:-------------:|:-------:|
-| ![Login](assets/screens/login.png) | ![Dashboard](assets/screens/dashboard.png) | ![TaskPortal](assets/screens/taskportal.png) | ![TaskApproval](assets/screens/taskapproval.png) | ![Profile](assets/screens/profile.png) |
-
----
 
 ## 🛠️ Tech Stack
 
