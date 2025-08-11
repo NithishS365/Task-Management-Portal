@@ -138,6 +138,21 @@ export const TaskPortal = () => {
         ])
       );
 
+      // --- NEW: Also update staticTasks if the submitted task is static ---
+      const staticIndex = staticTasks.findIndex((t) => t.sno === selectedTask.sno);
+      if (staticIndex !== -1) {
+        staticTasks[staticIndex].status = "progress";
+        staticTasks[staticIndex].attachments = [
+          ...(staticTasks[staticIndex].attachments || []),
+          ...uploadFiles.map((f) => ({
+            name: f.name,
+            url: URL.createObjectURL(f),
+          })),
+        ];
+        staticTasks[staticIndex].notDone = false;
+      }
+      // ---------------------------------------------------------------
+
       return updated;
     });
     setSelectedTask(null);

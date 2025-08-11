@@ -12,6 +12,8 @@ export function TaskAllocate() {
   const [subject, setSubject] = useState("");
   const [taskDesc, setTaskDesc] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState("");
+  const [files, setFiles] = useState([]);
 
   const toggleStaffSelection = (staff) => {
     setSelectedStaff((prev) =>
@@ -20,7 +22,9 @@ export function TaskAllocate() {
         : [...prev, staff]
     );
   };
-
+    const handleFileChange = (e) => {
+    setFiles(Array.from(e.target.files));
+  };
   const assignTask = () => {
     if (!taskTitle || !taskDesc || !category || selectedStaff.length === 0 || !dueDate) {
         toast.error("Please fill all fields and select at least one staff.");
@@ -51,6 +55,8 @@ export function TaskAllocate() {
     setSubject("");
     setDueDate("");
     setSelectedStaff([]);
+    setPriority("");
+    setFiles([]);
   };
 
   return (
@@ -105,8 +111,46 @@ export function TaskAllocate() {
           value={taskDesc}
           onChange={(e) => setTaskDesc(e.target.value)}
           className="w-full p-3 border border-gray-300 rounded-lg shadow-sm mb-5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          rows="4"
+          rows="1"
         />
+
+        <div className="mb-6">
+          <label className="block text-gray-700 font-medium mb-3">
+            Task Priority
+          </label>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => setPriority("High")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                priority === "High" ? "ring-2 ring-red-500" : ""
+              }`}
+              style={{ backgroundColor: "#FECACA" }} // light red
+            >
+              High
+            </button>
+            <button
+              type="button"
+              onClick={() => setPriority("Medium")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                priority === "Medium" ? "ring-2 ring-yellow-500" : ""
+              }`}
+              style={{ backgroundColor: "#FEF9C3" }} // light yellow
+            >
+              Medium
+            </button>
+            <button
+              type="button"
+              onClick={() => setPriority("Low")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                priority === "Low" ? "ring-2 ring-green-500" : ""
+              }`}
+              style={{ backgroundColor: "#BBF7D0" }} // light green
+            >
+              Low
+            </button>
+          </div>
+          </div>
 
         {/* Due Date */}
         <div className="mb-6">

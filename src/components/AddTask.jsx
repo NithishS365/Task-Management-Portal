@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ToastContainer , toast  } from "react-toastify";
 
 export const AddTask = ({ tasks, setTasks, task, setTask }) => {
   const [due, setDue] = useState(task.due || "");
@@ -8,7 +9,7 @@ export const AddTask = ({ tasks, setTasks, task, setTask }) => {
     const date = new Date();
 
     if (!task.name || !due) {
-      alert("Please enter a task and select a due date.");
+      toast.error("Please enter a task and select a due date.");
       return;
     }
 
@@ -44,7 +45,9 @@ export const AddTask = ({ tasks, setTasks, task, setTask }) => {
   }, [task]);
 
   return (
+    
     <section className="flex font-Montserrat justify-center items-center mt-8">
+      <ToastContainer />
       <form
         onSubmit={handletask}
         className="bg-white min-w-[400px] max-w-2xl w-full flex flex-col md:flex-row md:justify-evenly items-center gap-4 px-6 py-6 shadow-lg rounded-3xl border border-gray-200"
