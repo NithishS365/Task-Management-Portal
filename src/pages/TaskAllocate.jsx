@@ -117,7 +117,7 @@ export function TaskAllocate() {
         </div>
 
         {/* File Upload */}
-        <div className="mb-6">
+        <div className="mb-6  ">
           <label className="block text-gray-700 font-medium mb-2">
             Attach Files
           </label>
