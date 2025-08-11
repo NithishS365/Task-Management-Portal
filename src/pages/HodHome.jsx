@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import staff from "../Data/staff.json"
 import {
         ResponsiveContainer,
         LineChart,
@@ -27,6 +28,45 @@ export function HodHome() {
         const [toastText, setToastText] = useState();
 
         const myView = useMemo(() => ({ calendar: { labels: true } }), []);
+
+                const tasks = [
+        {
+        name: "Prepare Semester Report",
+        dueDate: "2025-08-10",
+
+        },
+        {
+        name: "Lab Equipment Audit",
+        dueDate: "2025-08-10",
+
+        },
+        {
+        name: "Faculty Meeting",
+        dueDate: "2025-08-10",
+
+        },
+        {
+        name: "Student Feedback Collection",
+        dueDate: "2025-08-10",
+
+        },
+        {
+        name: "Update Faculty Profiles",
+        dueDate: "2025-08-10",
+
+        },
+        {
+        name: "Organize Workshop",
+        dueDate: "2025-09-10",
+
+        },
+        {
+        name: "Library Book Purchase",
+        dueDate: "2025-08-10",
+
+        }
+        ];
+
 
         const handleToastClose = useCallback(() => {
                 setToastOpen(false);
@@ -68,7 +108,7 @@ export function HodHome() {
                                 <div className=" flex gap-3 row-span-1 ">
                                         <div className="bg-green-100 h-auto w-60 rounded-xl p-4 shadow text-center">
                                                 <h2 className="text-4xl font-bold text-green-600">45</h2>
-                                                <p className="text-gray-700 font-semibold">Tasks Completed</p>
+                                                <p className="text-gray-700 font-semibold">Tasks Assigned</p>
                                         </div>
                                         <div className="bg-blue-100 h-auto w-52 rounded-xl p-4 shadow text-center">
                                                 <h2 className="text-4xl font-bold text-blue-600">12</h2>
@@ -76,64 +116,83 @@ export function HodHome() {
                                         </div>
                                         <div className="bg-red-100 h-auto w-40 rounded-xl p-4 shadow text-center">
                                                 <h2 className="text-4xl font-bold text-red-600">8</h2>
-                                                <p className="text-gray-700 font-semibold">Pending</p>
+                                                <p className="text-gray-700 font-semibold">For Approval </p>
                                         </div>
                                 </div>
 
 
-                                {/* Calendar spans 3 columns */}
-                                <div className="col-span-1 row-span-3 bg-white rounded-xl p-4 shadow overflow-hidden">
-                                        <h3 className="text-lg  text-center  text-indigo-600 font-bold mb-2 flex items-center gap-2">
-                                                <span className="text-orange-500">📅</span> Upcoming Scheduled Tasks
-                                        </h3>
-                                        <div className="h-[100%]">
-                                                <Eventcalendar
-                                                        clickToCreate={true}
-                                                        dragToCreate={true}
-                                                        dragToMove={true}
-                                                        dragToResize={true}
-                                                        eventDelete={true}
-                                                        data={myEvents}
-                                                        view={myView}
-                                                        onEventClick={handleEventClick}
-                                                />
-                                        </div>
-                                        <Toast message={toastText} isOpen={isToastOpen} onClose={handleToastClose} />
-                                </div>
+                                {/* Overdues Card */}
+<div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between">
+  <h2 className="text-center text-red-500 font-bold text-lg mb-3">Overdues</h2>
+  <div className="overflow-y-auto max-h-[280px]">
+    {tasks.slice(0, 4).map((task, idx) => (
+      <div key={idx} className="border-b py-2 last:border-0 flex items-center justify-between">
+        <div>
+          <p className="font-medium text-gray-800">{task.name}</p>
+          <p className="text-sm text-gray-500">Due: {task.dueDate}</p>
+        </div>
+        <button className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs hover:bg-red-200">
+          Remind
+        </button>
+      </div>
+    ))}
+  </div>
+</div>
+
 
                                 <div className="bg-white flex shadow gap-4 row-span-2 rounded-xl">
-                                        <div className="w-full  p-4">
-                                                <h2 className="text-center text-indigo-600 font-bold text-lg mb-4">Task Categories Completed</h2>
+                                <div className="w-full p-4">
+                                <h2 className="text-center text-indigo-600 font-bold text-lg mb-2">
+                                Top Performing Staffs
+                                </h2>
 
-                                                {/* Table header */}
-                                                <div className="grid grid-cols-3 text-gray-600 font-semibold px-2 mb-2 text-sm">
-                                                        <span>Task Type</span>
-                                                        <span className="text-center">Completed</span>
-                                                        <span className="text-right">Rating</span>
-                                                </div>
-                                                <hr />
+                                {/* Table header */}
+                                <div className="grid grid-cols-5 text-gray-600 font-semibold px-2 mb-2 text-sm">
+                                <span>S.No</span>
+                                <span>Staff</span>
+                                <span className="text-center">Rating</span>
+                                <span className="text-center">Tasks Completed</span>
+                                <span className="text-right">On Progress</span>
+                                </div>
+                                <hr />
 
-                                                {/* Task Data */}
-                                                {[
-                                                        { name: 'Documentation', completed: 12, rating: 4.7 },
-                                                        { name: 'Data Collection', completed: 8, rating: 4.6 },
-                                                        { name: 'Time Table Allotment', completed: 5, rating: 4.8 },
-                                                        { name: 'Audits', completed: 3, rating: 4.4 }
-                                                ].map((task, index) => (
-                                                        <div
-                                                                key={index}
-                                                                className="grid grid-cols-3 px-2 py-2 text-sm border-b last:border-none"
-                                                        >
-                                                                <span>{task.name}</span>
-                                                                <span className="text-center">{task.completed}</span>
-                                                                <span className="text-right text-indigo-600 font-semibold">{task.rating}</span>
-                                                        </div>
-                                                ))}
+                                {/* Limit container height to exactly fit 3 rows */}
+                                <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
+                                        style={{ maxHeight: "180px" }}> 
+                                {staff.slice(0, 3).map((person, index) => (
+                                        <div
+                                        key={index}
+                                        className="grid grid-cols-5 px-2 py-1 text-sm border-b last:border-none items-center"
+                                        >
+                                        {/* Serial No */}
+                                        <span>{index + 1}</span>
+
+                                        {/* Staff image + name */}
+                                        <div className="flex items-center gap-2 bg-blue-50 py-1 px-2 rounded-full shadow-sm w-fit">
+                                        <img
+                                        src={person.img_url}
+                                        alt={person.t_name}
+                                        className="w-7 h-7 rounded-full object-cover"
+                                        />
+                                        <span className="text-sm font-medium text-gray-800 truncate max-w-[100px]">
+                                        {person.t_name}
+                                        </span>
                                         </div>
 
+                                        {/* Rating */}
+                                        <span className="text-center text-yellow-500">★★★★★</span>
 
+                                        {/* Tasks Completed */}
+                                        <span className="text-center text-indigo-600 font-semibold">1</span>
 
+                                        {/* On Progress */}
+                                        <span className="text-right text-indigo-600 font-semibold">1</span>
+                                        </div>
+                                ))}
                                 </div>
+                                </div>
+                                </div>
+
                         </div>
    
                         {/* Spacer */}
