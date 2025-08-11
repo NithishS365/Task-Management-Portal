@@ -77,6 +77,7 @@ export function TaskAllocate() {
           rows="4"
         />
 
+        <div className="mb-6 flex gap-6">        
         {/* Task Priority */}
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-3">
@@ -134,6 +135,7 @@ export function TaskAllocate() {
               ))}
             </ul>
           )}
+        </div>
         </div>
 
         {/* Due Date */}
