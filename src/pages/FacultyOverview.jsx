@@ -15,7 +15,7 @@ export const FacultyOverview = () => {
           <div
             key={idx}
             className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-6 flex flex-col items-center cursor-pointer"
-            onClick={() => navigate(`/HodDash/faculty_overview/staff/${staff.id}`, { state: { staff } })}
+            onClick={() => navigate(`/HodDash/faculty_overview/staff/${staff.t_id}`, { state: { staff } })}
           >
             <img
               src={staff.img_url}

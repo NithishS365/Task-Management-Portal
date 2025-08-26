@@ -40,6 +40,8 @@ export function TaskAllocate() {
       due: dueDate,
       category,
       subject,
+      priority,
+      files,
       attachments: [],
     };
 
@@ -63,7 +65,7 @@ export function TaskAllocate() {
     <>
     <ToastContainer />
     <Header />
-    <div className=" bg-gray-100 flex flex-col items-center py-6">
+    <div className=" bg-gray-100 flex flex-col items-center py-2">
       {/* Card Container */}
       <div className="bg-white rounded-2xl shadow-md shadow-gray-300 w-full max-w-3xl p-8">
         <h1 className="text-3xl font-semibold text-gray-800 mb-8 text-center">
@@ -114,6 +116,8 @@ export function TaskAllocate() {
           rows="1"
         />
 
+       <div className="mb-6 flex gap-6">        
+        {/* Task Priority */}
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-3">
             Task Priority
@@ -150,7 +154,29 @@ export function TaskAllocate() {
               Low
             </button>
           </div>
-          </div>
+        </div>
+
+        {/* File Upload */}
+        <div className="mb-6  ">
+          <label className="block text-gray-700 font-medium mb-2">
+            Attach Files
+          </label>
+          
+          <input
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            className="block w-full text-sm text-gray-600 border border-gray-300 rounded-lg cursor-pointer p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {files.length > 0 && (
+            <ul className="mt-2 text-sm text-gray-700">
+              {files.map((file, index) => (
+                <li key={index}> {file.name}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        </div>
 
         {/* Due Date */}
         <div className="mb-6">
