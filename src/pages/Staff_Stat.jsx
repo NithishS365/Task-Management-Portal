@@ -128,8 +128,23 @@ export const Staff_Stat = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Area type="monotone" dataKey="Completed" stroke="#10B981" fill="#6ee7b7" />
-                  <Area type="monotone" dataKey="Pending" stroke="#f59e42" fill="#f2f061" />
+                  <defs>
+                    <linearGradient id="CompletedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#10B988" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="PendingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="5%" stopColor="#f59e42" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#f59e42" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="MissedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="Completed" stroke="#10B981" fill="url(#CompletedGradient)" />
+                  <Area type="monotone" dataKey="Pending" stroke="#f59e42" fill="url(#PendingGradient)" />
+                  <Area type="monotone" dataKey="Missed" stroke="#EF4444" fill="url(#MissedGradient)" />
                   <Area type="monotone" dataKey="Missed" stroke="#EF4444" fill="#f26161" />
                 </AreaChart>
               </ResponsiveContainer>
