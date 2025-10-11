@@ -46,8 +46,6 @@ exports.getTasksByUser = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching user tasks' });
   }
 };
-
-// Get single task
 exports.getTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id)
