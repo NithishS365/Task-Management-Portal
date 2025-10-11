@@ -1,0 +1,286 @@
+import React, { useState, useEffect } from 'react';
+import {
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    PieChart,
+    Pie,
+    Cell,
+} from 'recharts';
+import { Eventcalendar, setOptions, Toast } from '@mobiscroll/react';
+import '@mobiscroll/react/dist/css/mobiscroll.min.css';
+import Header from "../components/Header";
+import { useTask } from '../context/TaskContext';
+import { useAuth } from '../context/AuthContext';
+
+setOptions({
+    theme: 'ios',
+    themeVariant: 'light',
+});
+
+export function Home() {
+    const { tasks, loading } = useTask();
+    const { user } = useAuth();
+    const [myEvents, setEvents] = useState([]);
+    const [isToastOpen, setToastOpen] = useState(false);
+    const [toastText, setToastText] = useState();
+    const [taskStats, setTaskStats] = useState({
+        completed: 0,
+        inProgress: 0,
+        pending: 0,
+        total: 0
+    });
+    const [taskData, setTaskData] = useState([]);
+    const [taskCategories, setTaskCategories] = useState([]);
+
+    const myView = { calendar: { labels: true } };
+
+    const handleToastClose = () => {
+        setToastOpen(false);
+    };
+
+    const handleEventClick = (args) => {
+        setToastText(args.event.title);
+        setToastOpen(true);
+    };
+
+    // Calculate task statistics from actual data
+    useEffect(() => {
+        if (tasks && tasks.length > 0) {
+            // Filter tasks for current user
+            const userTasks = tasks.filter(task => 
+                task.assignedTo === user?._id || 
+                task.assignedTo?._id === user?._id ||
+                task.createdBy === user?._id
+            );
+
+            const stats = {
+                completed: userTasks.filter(task => task.status === 'completed').length,
+                inProgress: userTasks.filter(task => task.status === 'in-progress').length,
+                pending: userTasks.filter(task => task.status === 'pending' || !task.status).length,
+                total: userTasks.length
+            };
+            setTaskStats(stats);
+
+            // Generate monthly data for charts
+            const currentYear = new Date().getFullYear();
+            const monthlyData = [];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            for (let i = 0; i < 12; i++) {
+                const monthTasks = userTasks.filter(task => {
+                    const taskDate = new Date(task.createdAt);
+                    return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
+                });
+                
+                monthlyData.push({
+                    name: monthNames[i],
+                    Completed: monthTasks.filter(task => task.status === 'completed').length,
+                    Pending: monthTasks.filter(task => task.status !== 'completed').length
+                });
+            }
+            setTaskData(monthlyData);
+
+            // Generate task categories from actual data
+            const categories = {};
+            userTasks.forEach(task => {
+                const category = task.category || 'General';
+                if (!categories[category]) {
+                    categories[category] = { completed: 0, total: 0 };
+                }
+                categories[category].total++;
+                if (task.status === 'completed') {
+                    categories[category].completed++;
+                }
+            });
+
+            const categoryList = Object.entries(categories).map(([name, data]) => ({
+                name,
+                completed: data.completed,
+                rating: data.total > 0 ? ((data.completed / data.total) * 5).toFixed(1) : '0.0'
+            }));
+            setTaskCategories(categoryList);
+
+            // Generate calendar events from tasks
+            const events = userTasks
+                .filter(task => task.dueDate)
+                .map(task => ({
+                    id: task._id,
+                    title: task.title,
+                    start: new Date(task.dueDate),
+                    end: new Date(task.dueDate),
+                    color: task.status === 'completed' ? '#10B981' : 
+                           task.status === 'in-progress' ? '#3B82F6' : '#EF4444',
+                    allDay: true
+                }));
+            setEvents(events);
+        } else {
+            setTaskStats({ completed: 0, inProgress: 0, pending: 0, total: 0 });
+            setTaskData([]);
+            setTaskCategories([]);
+            setEvents([]);
+        }
+    }, [tasks, user]);
+
+    // Pie chart data
+    const pieData = [
+        { name: 'Completed', value: taskStats.completed },
+        { name: 'On Process', value: taskStats.inProgress },
+        { name: 'Pending', value: taskStats.pending },
+    ].filter(item => item.value > 0); // Only show categories with data
+
+    const COLORS = ['#10B981', '#3B82F6', '#EF4444'];
+
+    return (
+        <div className="h-screen dark:bg-gray-900 overflow-hidden flex flex-col">
+            <Header />
+            {/* Main Content */}
+            <div className='p-4 flex-1 flex flex-col min-h-0'>
+                {/* Top Section - Reduced height for cards */}
+                <div className="grid grid-cols-2 gap-4 h-[55vh] mb-4">
+
+                    {/* Left Column */}
+                    <div className="flex flex-col gap-4">
+                        {/* Status Cards - Reduced height */}
+                        <div className="flex gap-4 h-[25%]">
+                            <div className="bg-green-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
+                                <h2 className="text-3xl font-bold text-green-600">{taskStats.completed}</h2>
+                                <p className="text-gray-700 font-semibold text-sm">Tasks Completed</p>
+                            </div>
+                            <div className="bg-blue-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
+                                <h2 className="text-3xl font-bold text-blue-600">{taskStats.inProgress}</h2>
+                                <p className="text-gray-700 font-semibold text-sm">On Process</p>
+                            </div>
+                            <div className="bg-red-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
+                                <h2 className="text-3xl font-bold text-red-600">{taskStats.pending}</h2>
+                                <p className="text-gray-700 font-semibold text-sm">Pending</p>
+                            </div>
+                        </div>
+
+                        {/* Task Categories - Increased height */}
+                        <div className="bg-white flex shadow gap-4 flex-1 rounded-xl">
+                            <div className="w-full p-4">
+                                <h2 className="text-center text-indigo-600 font-bold text-lg mb-4">
+                                    Task Categories
+                                </h2>
+                                
+                                {/* Table header */}
+                                <div className="grid grid-cols-3 text-gray-600 font-semibold px-2 mb-2">
+                                    <span>Category</span>
+                                    <span className="text-center">Completed</span>
+                                    <span className="text-right">Rating</span>
+                                </div>
+                                <hr className="mb-2" />
+
+                                {/* Task categories */}
+                                {taskCategories.map((task, index) => (
+                                    <div
+                                        key={index}
+                                        className="grid grid-cols-3 px-2 py-3 border-b last:border-none"
+                                    >
+                                        <span className="font-medium">{task.name}</span>
+                                        <span className="text-center">{task.completed}</span>
+                                        <span className="text-right text-indigo-600 font-semibold">
+                                            {task.rating}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 shadow overflow-hidden">
+                        <h3 className="text-lg text-center text-indigo-600 font-bold mb-4">
+                            📅 Calendar
+                        </h3>
+                        <div className="h-[calc(100%-3rem)]">
+                            <Eventcalendar
+                                clickToCreate={false}
+                                dragToCreate={false}
+                                dragToMove={false}
+                                dragToResize={false}
+                                eventDelete={false}
+                                data={myEvents}
+                                view={myView}
+                                onEventClick={handleEventClick}
+                            />
+                        </div>
+                        <Toast message={toastText} isOpen={isToastOpen} onClose={handleToastClose} />
+                    </div>
+
+                </div>
+
+                {/* Bottom Section: Charts - Increased height */}
+                <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+                    {/* Line Chart */}
+                    <div className="bg-white rounded-xl p-4 shadow flex flex-col">
+                        <h3 className="text-center text-indigo-600 font-bold text-lg mb-4">
+                            Task Progress
+                        </h3>
+                        <div className="flex-1 min-h-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={taskData}>
+                                    <Line type="monotone" dataKey="Completed" stroke="#10B981" strokeWidth={2} />
+                                    <Line type="monotone" dataKey="Pending" stroke="#EF4444" strokeWidth={2} />
+                                    <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Pie Chart */}
+                    <div className="bg-white rounded-xl p-4 shadow flex flex-col">
+                        <h3 className="text-indigo-600 font-bold text-lg mb-4 text-center">
+                            📊 Task Distribution
+                        </h3>
+
+                        <div className="flex items-center justify-center flex-1 min-h-0">
+                            {/* Pie Chart - Increased size */}
+                            <div className="flex-1 h-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            outerRadius="80%"
+                                            innerRadius="30%"
+                                            dataKey="value"
+                                            label={({ name, value }) => `${name}: ${value}`}
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            <div className="flex flex-col space-y-3 ml-4 min-w-0">
+                                {pieData.map((entry, index) => (
+                                    <div key={index} className="flex items-center space-x-2">
+                                        <div className="w-4 h-4 rounded-sm flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                                        <span className="text-gray-700 font-medium text-sm">
+                                            {entry.name}
+                                            <br />
+                                            <span className="text-gray-500">({entry.value})</span>
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

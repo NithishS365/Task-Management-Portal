@@ -1,0 +1,16 @@
+export { Dashboard } from "./Dashboard"
+export { Home } from "./Home"; 
+export { Login } from "./Login"
+export { Cal } from './Cal'
+export { TaskPortal } from "./TaskPortal"
+export { TaskAllocate } from "./TaskAllocate"
+export { Profile } from "./Profile"
+export { ProfileHod } from "./ProfileHod"
+export { ToDoList } from "./ToDoList"
+export { HodDash } from "./HodDash"
+export { HodHome } from "./HodHome"
+export { TaskApproval } from "./TaskApproval"
+export { FacultyOverview } from "./FacultyOverview"
+export { AllTasks } from "./AllTasks"
+export { StaffOverdue } from "./StaffOverdue"
+export { HodOverdue } from "./HodOverdue"
