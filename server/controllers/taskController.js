@@ -8,7 +8,6 @@ const {
   updateUserPerformanceStats 
 } = require('../utils/performanceCalculator');
 
-// Get all tasks
 exports.getAllTasks = async (req, res) => {
   try {
     const { status, priority, category, assignedTo } = req.query;
