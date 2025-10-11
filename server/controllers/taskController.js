@@ -32,7 +32,6 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
-// Get tasks by user
 exports.getTasksByUser = async (req, res) => {
   try {
     const { userId } = req.params;
