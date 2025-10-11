@@ -13,6 +13,7 @@ exports.getAllTasks = async (req, res) => {
     const { status, priority, category, assignedTo } = req.query;
     let filter = {};
 
+    
     // Apply filters
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
