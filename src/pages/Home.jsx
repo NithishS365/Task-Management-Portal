@@ -136,7 +136,7 @@ export function Home() {
     const COLORS = ['#10B981', '#3B82F6', '#EF4444'];
 
     return (
-        <div className="h-screen dark:bg-gray-900 overflow-hidden flex flex-col">
+        <div className="h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden font-Montserrat flex flex-col">
             <Header />
             {/* Main Content */}
             <div className='p-4 flex-1 flex flex-col min-h-0'>
@@ -148,15 +148,15 @@ export function Home() {
                         {/* Status Cards - Reduced height */}
                         <div className="flex gap-4 h-[25%]">
                             <div className="bg-green-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
-                                <h2 className="text-3xl font-bold text-green-600">{taskStats.completed}</h2>
+                                <h2 className="text-4xl font-bold text-green-600">{taskStats.completed}</h2>
                                 <p className="text-gray-700 font-semibold text-sm">Tasks Completed</p>
                             </div>
                             <div className="bg-blue-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
-                                <h2 className="text-3xl font-bold text-blue-600">{taskStats.inProgress}</h2>
+                                <h2 className="text-4xl font-bold text-blue-600">{taskStats.inProgress}</h2>
                                 <p className="text-gray-700 font-semibold text-sm">On Process</p>
                             </div>
                             <div className="bg-red-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
-                                <h2 className="text-3xl font-bold text-red-600">{taskStats.pending}</h2>
+                                <h2 className="text-4xl font-bold text-red-600">{taskStats.pending}</h2>
                                 <p className="text-gray-700 font-semibold text-sm">Pending</p>
                             </div>
                         </div>
@@ -194,8 +194,8 @@ export function Home() {
                     </div>
 
                     <div className="bg-white rounded-xl p-4 shadow overflow-hidden">
-                        <h3 className="text-lg text-center text-indigo-600 font-bold mb-4">
-                            📅 Calendar
+                        <h3 className="text-lg text-indigo-600 font-bold mb-4">
+                            📅 Upcoming Scheduled Tasks
                         </h3>
                         <div className="h-[calc(100%-3rem)]">
                             <Eventcalendar
@@ -242,8 +242,8 @@ export function Home() {
                         </h3>
 
                         <div className="flex items-center justify-center flex-1 min-h-0">
-                            {/* Pie Chart - Increased size */}
-                            <div className="flex-1 h-full">
+                            {/* Pie Chart - Optimized for label visibility */}
+                            <div className="flex-1 h-full max-w-[60%]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
@@ -251,10 +251,10 @@ export function Home() {
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
-                                            outerRadius="80%"
-                                            innerRadius="30%"
+                                            outerRadius="90%"
+                                            innerRadius="60%"
                                             dataKey="value"
-                                            label={({ name, value }) => `${name}: ${value}`}
+                                            label={false}
                                         >
                                             {pieData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -265,15 +265,15 @@ export function Home() {
                                 </ResponsiveContainer>
                             </div>
 
-                            <div className="flex flex-col space-y-3 ml-4 min-w-0">
+                            {/* Legend - Better positioned and sized */}
+                            <div className="flex flex-col justify-center space-y-3 ml-6 min-w-[120px]">
                                 {pieData.map((entry, index) => (
-                                    <div key={index} className="flex items-center space-x-2">
+                                    <div key={index} className="flex items-center space-x-3">
                                         <div className="w-4 h-4 rounded-sm flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                        <span className="text-gray-700 font-medium text-sm">
-                                            {entry.name}
-                                            <br />
-                                            <span className="text-gray-500">({entry.value})</span>
-                                        </span>
+                                        <div className="text-gray-700 font-medium text-sm">
+                                            <div>{entry.name}</div>
+                                            <div className="text-gray-500 text-xs">({entry.value} tasks)</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

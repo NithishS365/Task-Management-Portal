@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import auth from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -214,6 +215,56 @@ router.post('/register', async (req, res) => {
       success: false,
       message: 'Error creating user'
     });
+  }
+});
+
+// Get current user profile
+router.get('/profile', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Map user fields to match Profile component expectations
+    const profileData = {
+      // Original user fields
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      designation: user.designation,
+      phoneNumber: user.phoneNumber,
+      profilePicture: user.profilePicture,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      
+      // Map to Profile component expected fields
+      t_name: user.name,  // Use 'name' field
+      img_url: user.profilePicture || 'https://via.placeholder.com/150', // Default image if none
+      design: user.designation || 'Faculty',
+      dep: user.department || 'General',
+      phone: user.phoneNumber,
+      
+      // Optional fields that may not exist in current users table
+      linked_in_id: user.linked_in_id || null,
+      exp: user.exp || null,
+      qual: user.qual || null,
+      bio: user.bio || null,
+      spec: user.spec || null,
+      dob: user.dob || null,
+      t_id: user.t_id || null
+    };
+
+    console.log('📋 Profile data being sent:', profileData);
+    res.json(profileData);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
