@@ -451,6 +451,126 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
+// ✅ GET CURRENT USER PROFILE
+app.get('/api/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    console.log('👤 Profile endpoint accessed for user:', req.user?.email);
+    
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Map user fields to match Profile component expectations
+    const profileData = {
+      // Original user fields
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      designation: user.designation,
+      phone: user.phone,
+      qualification: user.qualification,
+      experience: user.experience,
+      bio: user.bio,
+      linkedinId: user.linkedinId,
+      imageUrl: user.imageUrl,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      
+      // Map to Profile component expected fields
+      t_name: user.name,
+      img_url: user.imageUrl || 'https://via.placeholder.com/150',
+      design: user.designation || 'Faculty',
+      dep: user.department || 'General',
+      phone: user.phone,
+      email: user.email,
+      username: user.username,
+      linked_in_id: user.linkedinId,
+      exp: user.experience,
+      qual: user.qualification,
+      bio: user.bio
+    };
+
+    console.log('📋 Profile data being sent for:', user.email);
+    res.json(profileData);
+  } catch (error) {
+    console.error('❌ Error fetching user profile:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ✅ CHANGE PASSWORD ENDPOINT
+app.put('/api/auth/change-password', authMiddleware, async (req, res) => {
+  try {
+    console.log('🔐 Change password request for user:', req.user?.email);
+    
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Current password and new password are required' 
+      });
+    }
+
+    if (newPassword.length < 3) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'New password must be at least 3 characters long' 
+      });
+    }
+
+    // Get user with password field
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+
+    console.log('🔍 Debug - User found:', user.email);
+    console.log('🔍 Debug - User password:', user.password);
+    console.log('🔍 Debug - Current password provided:', currentPassword);
+
+    // ✅ CHECK PASSWORD (Plain text comparison to match login logic)
+    if (user.password !== currentPassword) {
+      console.log('❌ Debug - Password comparison failed');
+      return res.status(400).json({ 
+        success: false,
+        error: 'Current password is incorrect' 
+      });
+    }
+
+    console.log('✅ Debug - Password comparison successful');
+
+    // Note: Storing new password as plain text to match existing system
+    // In production, you should hash passwords with bcrypt
+    await User.findByIdAndUpdate(req.user.id, {
+      password: newPassword,
+      lastLogin: new Date()
+    });
+
+    console.log('✅ Password changed successfully for user:', user.email);
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error changing password:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error' 
+    });
+  }
+});
+
 app.get('/api/notifications/me', (req, res) => {
   console.log('📬 Notifications endpoint accessed');
   res.json({

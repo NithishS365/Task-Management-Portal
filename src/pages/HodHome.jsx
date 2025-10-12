@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTask } from '../context/Taskcontext';
-import staff from "../../public/data/staff.json";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -18,7 +17,7 @@ import {
 } from 'recharts';
 
 import '@mobiscroll/react/dist/css/mobiscroll.min.css';
-import { data } from "../../public/data/data";
+
 import  Header  from "../components/Header";
 import {
   IoClipboardOutline,

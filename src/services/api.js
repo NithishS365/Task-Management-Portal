@@ -30,12 +30,17 @@ class ApiService {
       const responseText = await response.text();
 
       if (!response.ok) {
+        console.log('🔍 Raw error response:', responseText);
         let errorMessage = responseText;
         try {
           const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || responseText;
+          console.log('🔍 Parsed error data:', errorData);
+          // Try to extract error message from different possible fields
+          errorMessage = errorData.error || errorData.message || errorData.msg || responseText;
         } catch (e) {
-          // Response is not JSON
+          // Response is not JSON, use raw text
+          console.log('🔍 Response is not JSON, using raw text');
+          errorMessage = responseText;
         }
         
         console.error(`❌ API Error ${response.status}:`, errorMessage);
@@ -116,11 +121,39 @@ class ApiService {
   async getUsers() {
     return this.makeRequest('/users');
   }
+
+  // Get current user profile
+  async getCurrentUserProfile() {
+    return this.makeRequest('/auth/profile');
+  }
+
+  // Get user profile by ID
+  async getUserProfile(userId) {
+    return this.makeRequest(`/users/${userId}`);
+  }
+
+  // Change user password
+  async changePassword(passwordData) {
+    return this.makeRequest('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(passwordData)
+    });
+  }
 }
 
-// ✅ CREATE INSTANCE
+//  CREATE INSTANCE
 const apiService = new ApiService();
 
-// ✅ EXPORT BOTH WAYS
+// Export individual methods as named exports
+export const getCurrentUserProfile = () => apiService.getCurrentUserProfile();
+export const getUserProfile = (userId) => apiService.getUserProfile(userId);
+export const changePassword = (passwordData) => apiService.changePassword(passwordData);
+export const getUsers = () => apiService.getUsers();
+export const getTasks = () => apiService.getTasks();
+export const createTask = (taskData) => apiService.createTask(taskData);
+export const updateTask = (taskId, taskData) => apiService.updateTask(taskId, taskData);
+export const deleteTask = (taskId) => apiService.deleteTask(taskId);
+
+//  EXPORT BOTH WAYS
 export { apiService };
 export default apiService;
