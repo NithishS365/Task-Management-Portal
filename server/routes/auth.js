@@ -18,22 +18,22 @@ router.post('/login', async (req, res) => {
 
     // ✅ VALIDATE INPUT
     if (!email || !password) {
-      console.log('❌ Missing email or password');
+      console.log('❌ Missing email/username or password');
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email/username and password are required'
       });
     }
 
-    // ✅ FIND USER BY EMAIL
-    console.log('🔍 Looking for user with email:', email);
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // ✅ FIND USER BY EMAIL OR USERNAME
+    console.log('🔍 Looking for user with email/username:', email);
+    const user = await User.findByEmailOrUsername(email);
     
     if (!user) {
       console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/username or password'
       });
     }
 
@@ -48,21 +48,21 @@ router.post('/login', async (req, res) => {
     // ✅ CHECK IF USER IS ACTIVE
     if (!user.isActive) {
       console.log('❌ User account is inactive:', email);
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
         message: 'Account is inactive. Please contact administrator.'
       });
     }
 
-    // ✅ VERIFY PASSWORD
-    console.log('🔐 Verifying password...');
+    // ✅ CHECK PASSWORD
+    console.log('🔐 Verifying password for user:', user.email);
     const isPasswordValid = await user.comparePassword(password);
     
     if (!isPasswordValid) {
-      console.log('❌ Invalid password for user:', email);
+      console.log('❌ Invalid password for user:', user.email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/username or password'
       });
     }
 
@@ -99,6 +99,7 @@ router.post('/login', async (req, res) => {
       _id: user._id,
       id: user._id,
       name: user.name,
+      username: user.username,
       email: user.email,
       role: user.role,
       department: user.department,
@@ -153,28 +154,36 @@ router.post('/register', async (req, res) => {
   try {
     console.log('📝 Register attempt:', req.body.email);
 
-    const { name, email, password, role, department } = req.body;
+    const { name, username, email, password, role, department } = req.body;
 
     // ✅ VALIDATE INPUT
-    if (!name || !email || !password) {
+    if (!name || !username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required'
+        message: 'Name, username, email, and password are required'
       });
     }
 
-    // ✅ CHECK IF USER EXISTS
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    // ✅ CHECK IF USER EXISTS BY EMAIL OR USERNAME
+    const existingUser = await User.findOne({
+      $or: [
+        { email: email.toLowerCase() },
+        { username: username.toLowerCase() }
+      ]
+    });
+    
     if (existingUser) {
+      const field = existingUser.email.toLowerCase() === email.toLowerCase() ? 'email' : 'username';
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: `User already exists with this ${field}`
       });
     }
 
     // ✅ CREATE NEW USER
     const user = new User({
       name,
+      username: username.toLowerCase(),
       email: email.toLowerCase(),
       password,
       role: role || 'faculty',
@@ -192,6 +201,7 @@ router.post('/register', async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
         department: user.department

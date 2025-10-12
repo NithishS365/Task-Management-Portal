@@ -104,9 +104,23 @@ export const Login = () => {
         return;
       }
 
-      if (!email.includes('@')) {
-        showToast('Please enter a valid email address', 'error');
-        return;
+      // Enhanced validation - support both email and username
+      if (email.includes('@')) {
+        // If it contains @, validate as email
+        if (!email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
+          showToast('Please enter a valid email address', 'error');
+          return;
+        }
+      } else {
+        // If no @, validate as username
+        if (email.length < 3) {
+          showToast('Username must be at least 3 characters long', 'error');
+          return;
+        }
+        if (!email.match(/^[a-zA-Z0-9_]+$/)) {
+          showToast('Username can only contain letters, numbers, and underscores', 'error');
+          return;
+        }
       }
 
       if (password.length < 3) {
@@ -165,7 +179,7 @@ export const Login = () => {
       let errorMessage = 'Login failed. Please try again.';
       
       if (err.message.includes('401') || err.message.includes('Invalid')) {
-        errorMessage = 'Invalid email or password. Please check your credentials.';
+        errorMessage = 'Invalid email/username or password. Please check your credentials.';
       } else if (err.message.includes('403')) {
         errorMessage = 'Account access denied. Please contact administrator.';
       } else if (err.message.includes('500')) {
@@ -216,14 +230,19 @@ export const Login = () => {
             )}
 
             <form onSubmit={handleSubmit}>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter Your Username or Email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full mb-3 px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600"
-              />
+              <div className="mb-3">
+                <input
+                  type="text"
+                  name="email"
+                  placeholder="Enter Your Username or Email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                />
+                <p className="text-xs text-gray-500 mt-1 ml-1">
+                  You can use either your username (e.g., AIDS_HOD001) or email address
+                </p>
+              </div>
 
             <input
               type="password"

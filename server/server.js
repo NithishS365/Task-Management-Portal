@@ -275,18 +275,23 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email/username and password are required'
       });
     }
 
-    // ✅ FIND USER IN DATABASE (from your migrated data)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // ✅ FIND USER IN DATABASE BY EMAIL OR USERNAME (case-insensitive)
+    const user = await User.findOne({
+      $or: [
+        { email: email.toLowerCase() },
+        { username: { $regex: new RegExp(`^${email}$`, 'i') } }
+      ]
+    });
     
     if (!user) {
       console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/username or password'
       });
     }
 
@@ -295,7 +300,7 @@ app.post('/api/auth/login', async (req, res) => {
       console.log('❌ Password invalid for:', email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/username or password'
       });
     }
 
