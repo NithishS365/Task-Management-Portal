@@ -89,11 +89,23 @@ export const AuthProvider = ({ children }) => {
       
       // ✅ VALIDATE INPUT
       if (!credentials.email || !credentials.password) {
-        throw new Error('Email and password are required');
+        throw new Error('Email/username and password are required');
       }
 
-      if (!credentials.email.includes('@')) {
-        throw new Error('Please enter a valid email address');
+      // Enhanced validation - support both email and username
+      if (credentials.email.includes('@')) {
+        // If it contains @, validate as email
+        if (!credentials.email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
+          throw new Error('Please enter a valid email address');
+        }
+      } else {
+        // If no @, validate as username
+        if (credentials.email.length < 3) {
+          throw new Error('Username must be at least 3 characters long');
+        }
+        if (!credentials.email.match(/^[a-zA-Z0-9_]+$/)) {
+          throw new Error('Username can only contain letters, numbers, and underscores');
+        }
       }
 
       if (credentials.password.length < 3) {

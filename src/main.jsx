@@ -5,7 +5,7 @@ import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
-import { TaskProvider } from './context/TaskContext.jsx'
+import { TaskProvider } from './context/Taskcontext.jsx'
 import { NotificationProvider } from './context/NotificationContext.jsx' // ✅ CORRECT IMPORT
 
 createRoot(document.getElementById('root')).render(

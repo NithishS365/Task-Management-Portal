@@ -8,6 +8,16 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Name cannot exceed 100 characters']
   },
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters long'],
+    maxlength: [20, 'Username cannot exceed 20 characters'],
+    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
+  },
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -113,6 +123,7 @@ const userSchema = new mongoose.Schema({
 
 // ✅ INDEX FOR FASTER QUERIES
 userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
 
@@ -169,6 +180,22 @@ userSchema.methods.toJSON = function() {
 // ✅ STATIC METHOD TO FIND BY EMAIL
 userSchema.statics.findByEmail = function(email) {
   return this.findOne({ email: email.toLowerCase() });
+};
+
+// ✅ STATIC METHOD TO FIND BY USERNAME
+userSchema.statics.findByUsername = function(username) {
+  return this.findOne({ username: username.toLowerCase() });
+};
+
+// ✅ STATIC METHOD TO FIND BY EMAIL OR USERNAME
+userSchema.statics.findByEmailOrUsername = function(identifier) {
+  const cleanIdentifier = identifier.toLowerCase();
+  return this.findOne({
+    $or: [
+      { email: cleanIdentifier },
+      { username: cleanIdentifier }
+    ]
+  });
 };
 
 // ✅ STATIC METHOD TO GET ALLOWED ROLES
