@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTask } from '../context/Taskcontext';
+import { getStaff } from '../services/api';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -38,6 +39,7 @@ export function HodHome() {
   const [myEvents, setEvents] = useState([]);
   const [isToastOpen, setToastOpen] = useState(false);
   const [toastText, setToastText] = useState();
+  const [staff, setStaff] = useState([]);
 
   const myView = useMemo(() => ({ calendar: { labels: true } }), []);
 
@@ -54,7 +56,28 @@ export function HodHome() {
   const { tasks, fetchTasks } = useTask();
 
   useEffect(() => {
-    setEvents(data);
+    const fetchData = async () => {
+      try {
+        // Fetch staff data from MongoDB
+        const response = await getStaff();
+        console.log('📋 Staff data fetched:', response);
+        
+        // Extract users array from response and map fields for compatibility
+        const staffData = response.users || response || [];
+        const mappedStaff = staffData.map(user => ({
+          ...user,
+          t_name: user.name || user.fullName,
+          img_url: user.imageUrl || 'https://via.placeholder.com/150'
+        }));
+        
+        setStaff(mappedStaff);
+      } catch (error) {
+        console.error('❌ Error fetching staff data:', error);
+        setStaff([]); // Set empty array as fallback
+      }
+    };
+
+    fetchData();
     fetchTasks(); // Fetch tasks when component mounts
   }, [fetchTasks]);
 
@@ -143,7 +166,7 @@ export function HodHome() {
         completed: 0,
         forApproval: 0,
         pending: 0,
-        totalStaff: 7, // This could be dynamic too if we had staff data
+        totalStaff: staff.length || 0,
         ratio: 0
       };
     }
@@ -151,7 +174,7 @@ export function HodHome() {
     const completed = tasks.filter(task => task.status === 'completed').length;
     const forApproval = tasks.filter(task => task.status === 'ForApproval').length;
     const pending = tasks.filter(task => task.status === 'pending' || !task.status).length;
-    const totalStaff = 7; // This should ideally come from staff API
+    const totalStaff = staff.length || 0;
     const ratio = totalStaff > 0 ? (tasks.length / totalStaff).toFixed(2) : 0;
     
     return {
@@ -162,7 +185,7 @@ export function HodHome() {
       totalStaff,
       ratio
     };
-  }, [tasks]);
+  }, [tasks, staff]);
 
   return (
 <div className="p-2 h-screen bg-gray-100 dark:bg-gray-900 overflow-y-auto">
@@ -188,7 +211,7 @@ export function HodHome() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-2xl font-bold text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">
-                  54
+                  {taskStats.total}
                 </h2>
                 <span className="text-xs text-white dark:text-white font-medium bg-orange-600 dark:bg-orange-900/30 px-2 py-1 rounded-full">
                   +5 this week
@@ -218,7 +241,7 @@ export function HodHome() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 group-hover:text-yellow-700 dark:group-hover:text-yellow-300 transition-colors">
-                  7
+                  {taskStats.totalStaff}
                 </h2>
                 <span className="text-xs text-white dark:text-white font-medium bg-yellow-500 dark:bg-yellow-900/30 px-2 py-1 rounded-full">
                   100% active
@@ -263,7 +286,7 @@ export function HodHome() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-2xl font-bold text-sky-600 dark:text-sky-400 group-hover:text-sky-700 dark:group-hover:text-sky-300 transition-colors">
-                  7.7
+                  {taskStats.ratio}
                 </h2>
                 <span className="text-xs text-white dark:text-white font-medium bg-sky-500 dark:bg-sky-900/30 px-2 py-1 rounded-full">
                   Balanced
@@ -297,7 +320,7 @@ export function HodHome() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">
-                  45
+                  {taskStats.completed}
                 </h2>
                 <span className="text-xs text-white dark:text-white font-medium bg-green-500 dark:bg-green-900/30 px-2 py-1 rounded-full">
                   ↗ +12%
@@ -333,7 +356,7 @@ export function HodHome() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-                  12
+                  {taskStats.forApproval}
                 </h2>
                 <span className="text-xs text-white dark:text-white font-medium bg-blue-500 dark:bg-blue-900/30 px-2 py-1 rounded-full ">
                   2.3 days avg
@@ -364,7 +387,7 @@ export function HodHome() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">
-                  8
+                  {taskStats.pending}
                 </h2>
                 <span className="text-xs text-white dark:text-white font-medium bg-red-500 dark:bg-red-900/30 px-2 py-1 rounded-full">
                   Urgent
@@ -490,27 +513,25 @@ export function HodHome() {
               <span className="text-orange-500">📊</span> Task Distribution (Priority-Based)
             </h3>
             <div className="w-full flex justify-center items-center">
-              <ResponsiveContainer width={340} height={320}>
-                <PieChart>
-                  <Pie
-                    data={donutData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={3}
-                    dataKey="value"
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                  >
-                    {donutData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                    <Label value="Total Tasks" position="center" fill="#A0AEC0" fontSize={20} />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <PieChart width={340} height={320}>
+                <Pie
+                  data={donutData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={3}
+                  dataKey="value"
+                  label={({ name, percent }) =>
+                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  }
+                >
+                  {donutData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                  <Label value="Total Tasks" position="center" fill="#A0AEC0" fontSize={20} />
+                </Pie>
+              </PieChart>
             </div>
             {/* Custom Legend */}
             <div className="flex flex-col space-y-2 mt-2">

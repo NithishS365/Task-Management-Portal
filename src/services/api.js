@@ -118,6 +118,11 @@ class ApiService {
     });
   }
 
+  // Get all staff/users
+  async getStaff() {
+    return this.makeRequest('/users');
+  }
+
   async getUsers() {
     return this.makeRequest('/users');
   }
@@ -148,6 +153,7 @@ const apiService = new ApiService();
 export const getCurrentUserProfile = () => apiService.getCurrentUserProfile();
 export const getUserProfile = (userId) => apiService.getUserProfile(userId);
 export const changePassword = (passwordData) => apiService.changePassword(passwordData);
+export const getStaff = () => apiService.getStaff();
 export const getUsers = () => apiService.getUsers();
 export const getTasks = () => apiService.getTasks();
 export const createTask = (taskData) => apiService.createTask(taskData);

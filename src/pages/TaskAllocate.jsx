@@ -6,7 +6,6 @@ import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import apiService from '../services/api';  // ✅ ADD THIS LINE
-import staffData from '../../public/data/staff.json';
 
 export function TaskAllocate() {
   const [isOpen, setIsOpen] = useState(false);
