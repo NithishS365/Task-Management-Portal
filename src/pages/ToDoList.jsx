@@ -12,7 +12,7 @@ export const ToDoList = () => {
   }, [tasks]);
 
   return (
-    <div className='h-screen overflow-hidden bg-gradient-to-br bg-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'>
+    <div className='h-screen overflow-hidden bg-gray-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'>
       <Header />
       <main className="min-h-screen p-2 sm:p-2 lg:p-6">
         {/* Enhanced Header Section */}

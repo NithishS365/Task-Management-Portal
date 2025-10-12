@@ -402,7 +402,7 @@ console.log('🔍 DEBUG: Tasks with extensionApproved=true:', userTasks.filter(t
         <div className="mb-8">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-3xl font-bold text-indigo-600 dark:text-white mb-2">
                 My Tasks
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
@@ -439,27 +439,26 @@ console.log('🔍 DEBUG: Tasks with extensionApproved=true:', userTasks.filter(t
             </div>
           </div>
 
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
-            {[
-              { label: 'Total', value: taskStats.total, color: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:border-blue-800' },
-              { label: 'New Tasks', value: taskStats.newTasks, color: 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/50 dark:text-purple-400 dark:border-purple-800' },
-              { label: 'In Progress', value: taskStats.inProgress, color: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:border-blue-800' },
-              { label: 'For Approval', value: taskStats.ForApproval, color: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-800' },
-              { label: 'Completed', value: taskStats.completed, color: 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/50 dark:text-green-400 dark:border-green-800' },
-              { label: 'Overdue', value: taskStats.overdue, color: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/50 dark:text-red-400 dark:border-red-800' },
-              // { label: 'Extended Tasks', value: taskStats.overdueApproved, color: 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/50 dark:text-orange-400 dark:border-orange-800' },
-              { label: 'High Priority', value: taskStats.highPriority, color: 'bg-pink-50 text-pink-600 border-pink-200 dark:bg-pink-900/50 dark:text-pink-400 dark:border-pink-800' },
-            ].map((stat, index) => (
-              <div key={index} className={`p-4 rounded-lg border ${stat.color}`}>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="text-sm opacity-75">{stat.label}</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
+                {[
+                  { label: 'Total', value: taskStats.total, color: 'bg-gradient-to-br from-[#B8D4FF] to-[#E6F0FF] text-blue-700 border border-slate-200/50 shadow-sm hover:shadow-md dark:from-slate-800 dark:to-slate-900 dark:text-slate-300 dark:border-slate-700' },
+                  { label: 'New Tasks', value: taskStats.newTasks, color: 'bg-gradient-to-br from-violet-50 to-purple-100 text-violet-700 border border-violet-200/50 shadow-sm hover:shadow-md dark:from-violet-900/20 dark:to-purple-900/30 dark:text-violet-300 dark:border-violet-800/50' },
+                  { label: 'In Progress', value: taskStats.inProgress, color: 'bg-gradient-to-br from-indigo-50 to-blue-100 text-indigo-700 border border-indigo-200/50 shadow-sm hover:shadow-md dark:from-indigo-900/20 dark:to-blue-900/30 dark:text-indigo-300 dark:border-indigo-800/50' },
+                  { label: 'For Approval', value: taskStats.ForApproval, color: 'bg-gradient-to-br from-amber-50 to-orange-100 text-amber-700 border border-amber-200/50 shadow-sm hover:shadow-md dark:from-amber-900/20 dark:to-orange-900/30 dark:text-amber-300 dark:border-amber-800/50' },
+                  { label: 'Completed', value: taskStats.completed, color: 'bg-gradient-to-br from-emerald-50 to-green-100 text-emerald-700 border border-emerald-200/50 shadow-sm hover:shadow-md dark:from-emerald-900/20 dark:to-green-900/30 dark:text-emerald-300 dark:border-emerald-800/50' },
+                  { label: 'Overdue', value: taskStats.overdue, color: 'bg-gradient-to-br from-red-50 to-rose-100 text-red-700 border border-red-200/50 shadow-sm hover:shadow-md dark:from-red-900/20 dark:to-rose-900/30 dark:text-red-300 dark:border-red-800/50' },
+                  // { label: 'Extended Tasks', value: taskStats.overdueApproved, color: 'bg-gradient-to-br from-orange-50 to-orange-100 text-orange-700 border border-orange-200/50 shadow-sm hover:shadow-md dark:from-orange-900/20 dark:to-orange-900/30 dark:text-orange-300 dark:border-orange-800/50' },
+                  { label: 'High Priority', value: taskStats.highPriority, color: 'bg-gradient-to-br from-rose-50 to-pink-100 text-rose-700 border border-rose-200/50 shadow-sm hover:shadow-md dark:from-rose-900/20 dark:to-pink-900/30 dark:text-rose-300 dark:border-rose-800/50' },
+                ].map((stat, index) => (
+                  <div key={index} className={`p-4 rounded-xl transition-all duration-300 ${stat.color}`}>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-sm opacity-75 font-medium">{stat.label}</div>
+                  </div>
+                ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Search and Filter Controls */}
+              {/* Search and Filter Controls */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
@@ -753,13 +752,13 @@ console.log('🔍 DEBUG: Tasks with extensionApproved=true:', userTasks.filter(t
                           onClick={() => handleAcceptTask(task._id)}
                           className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700 transition-colors"
                         >
-                          ✅ Accept
+                          Accept
                         </button>
                         <button
                           onClick={() => handleRejectTask(task._id)}
                           className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md text-sm hover:bg-red-700 transition-colors"
                         >
-                          ❌ Reject
+                          Reject
                         </button>
                       </div>
                     )}
@@ -785,7 +784,7 @@ console.log('🔍 DEBUG: Tasks with extensionApproved=true:', userTasks.filter(t
                         onClick={() => handleSubmitTask(task)}
                         className="w-full bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
                       >
-                        📤 Submit Task
+                        Submit Task
                       </button>
                     )}
                   </div>

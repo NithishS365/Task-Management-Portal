@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import apiService from '../services/api';  // ✅ ADD THIS LINE
+import { getStaff } from '../services/api';
 
 export function TaskAllocate() {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,54 +116,35 @@ const testNotificationSystem = () => {
     }
   };
 
-  // Load faculty from Staff.json
-  const loadFacultyFromJSON = async () => {
+  // Load faculty from MongoDB API
+  const loadFacultyFromAPI = async () => {
     try {
       setLoadingStaff(true);
-      console.log('🔄 Starting to load faculty from staff.json...');
+      console.log('🔄 Starting to load faculty from MongoDB API...');
       
-      const possibleUrls = ['/data/staff.json', '/staff.json'];
-      let response = null;
-      let actualUrl = null;
+      const response = await getStaff();
+      console.log('✅ Successfully fetched faculty response:', response);
       
-      for (const url of possibleUrls) {
-        console.log('🌐 Trying to fetch from:', url);
-        try {
-          response = await fetch(url);
-          if (response.ok) {
-            actualUrl = url;
-            console.log('✅ Successfully found file at:', actualUrl);
-            break;
-          }
-        } catch (fetchError) {
-          console.log('❌ Network error for:', url, fetchError.message);
-        }
-      }
-      
-      if (!response || !response.ok) {
-        throw new Error(`Could not find staff.json in any location`);
-      }
-      
-      const rawText = await response.text();
-      const facultyData = JSON.parse(rawText);
-      console.log('✅ Successfully parsed JSON, faculty count:', facultyData.length);
+      // Extract users array from response object
+      const facultyData = response.users || response;
+      console.log('✅ Extracted faculty data:', facultyData);
       
       if (!Array.isArray(facultyData) || facultyData.length === 0) {
-        throw new Error('Faculty data is not a valid array');
+        throw new Error('No faculty data available');
       }
-      
+
       const transformedFaculty = facultyData.map((faculty) => ({
-        _id: faculty.t_id,
-        name: faculty.t_name,
+        _id: faculty._id || faculty.t_id,
+        name: faculty.name || faculty.t_name,
         email: faculty.email || 'No email provided',
-        role: 'faculty',
-        department: faculty.dep || 'Unknown Department',
-        designation: faculty.design || 'Faculty',
-        specialization: faculty.spec || 'General',
-        image: faculty.img_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(faculty.t_name)}&background=3b82f6&color=ffffff`,
+        role: faculty.role || 'faculty',
+        department: faculty.department || faculty.dep || 'Unknown Department',
+        designation: faculty.designation || faculty.design || 'Faculty',
+        specialization: faculty.specialization || faculty.spec || 'General',
+        image: faculty.image || faculty.img_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(faculty.name || faculty.t_name)}&background=3b82f6&color=ffffff`,
         username: faculty.username,
-        experience: faculty.exp || 'Not specified',
-        linkedIn: faculty.linked_in_id
+        experience: faculty.experience || faculty.exp || 'Not specified',
+        linkedIn: faculty.linkedIn || faculty.linked_in_id
       })).filter(f => f._id && f.name);
       
       setStaffList(transformedFaculty);
@@ -172,7 +153,7 @@ const testNotificationSystem = () => {
     } catch (error) {
       console.error('❌ Faculty loading error:', error.message);
       
-      // No fallback - show empty list on error
+      // Show empty list on error
       setStaffList([]);
       toast.error(`Failed to load faculty: ${error.message}. Please try refreshing the page.`);
     } finally {
@@ -182,7 +163,7 @@ const testNotificationSystem = () => {
 
   // Load faculty when component mounts
   useEffect(() => {
-    loadFacultyFromJSON();
+    loadFacultyFromAPI();
   }, []);
 
   const toggleStaffSelection = (staff) => {
@@ -417,7 +398,7 @@ const assignTask = async () => {
       <div className="p-4 max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold  mb-1">
+          <h1 className="text-3xl font-bold text-indigo-600 mb-1">
             📋 Task Allocation
           </h1>
                   </div>

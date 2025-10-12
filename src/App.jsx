@@ -6,7 +6,7 @@ import './App.css';
 
 function App() {
   return (
-    <div className="App bg-gray-100">
+    <div className="App bg-gray-100 font-Montserrat">
       <AllRoutes />
       <ToastContainer 
         position="top-right"

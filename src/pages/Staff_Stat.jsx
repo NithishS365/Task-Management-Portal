@@ -205,23 +205,23 @@ export const Staff_Stat = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-        <p className="text-lg text-gray-600">Loading staff details...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mb-4"></div>
+        <p className="text-lg text-gray-600 dark:text-gray-400">Loading staff details...</p>
       </div>
     );
   }
 
   if (error || !staff) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
         <Header />
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-gray-900/50 p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700">
             <div className="text-center">
               <div className="text-6xl mb-4">❌</div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Staff Data</h2>
-              <p className="text-gray-600 mb-6">{error || 'Staff data not found.'}</p>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Unable to Load Staff Data</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">{error || 'Staff data not found.'}</p>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate(-1)}
@@ -244,7 +244,7 @@ export const Staff_Stat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       <div className="flex flex-col items-center py-0 px-4">
         <button
