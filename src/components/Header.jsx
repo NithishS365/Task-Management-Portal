@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { getCurrentUserProfile } from '../services/api';
 import { toast } from 'react-toastify';
-import staffData from '../../public/data/staff.json';
-import hodData from '../../public/data/hod.json';
+
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -47,22 +47,23 @@ const Header = () => {
     setIsDarkMode(isDark);
   }, []);
 
-  // ✅ FETCH USER PROFILE DATA
+  // ✅ FETCH USER PROFILE DATA FROM MONGODB
   useEffect(() => {
-    if (user) {
-      // Check if user is HOD
-      if (user.role === 'hod' || user.username === hodData.username) {
-        setUserProfileData(hodData);
-      } else {
-        // Find staff member
-        const foundStaff = staffData.find(
-          (staff) => staff.username === user.username || 
-                     staff.t_id === user.username || 
-                     staff.email === user.email
-        );
-        setUserProfileData(foundStaff);
+    const fetchUserProfile = async () => {
+      if (user?.username) {
+        try {
+          console.log('🔍 Fetching user profile for:', user.username);
+          const profileData = await getCurrentUserProfile();
+          console.log('✅ Profile data received:', profileData);
+          setUserProfileData(profileData);
+        } catch (error) {
+          console.error('❌ Error fetching user profile:', error);
+          // Don't show error toast as it might be annoying for users
+        }
       }
-    }
+    };
+
+    fetchUserProfile();
   }, [user]);
 
   // ✅ CLOSE DROPDOWNS ON OUTSIDE CLICK
@@ -131,7 +132,7 @@ const Header = () => {
 
   // ✅ GET PROFILE ROUTE BASED ON USER ROLE
   const getProfileRoute = () => {
-    if (user?.role === 'hod' || user?.username === hodData.username) {
+    if (user?.role === 'hod') {
       return '/HodDash/profileHod';
     }
     return '/dashboard/profile';
