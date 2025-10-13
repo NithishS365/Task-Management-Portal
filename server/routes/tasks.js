@@ -7,6 +7,19 @@ import { sendTaskAssignmentNotification, sendTaskUpdateNotification} from '../so
 
 const router = express.Router();
 
+// Import controller functions
+import { 
+  getAllTasks, 
+  getTasksByUser, 
+  getTask, 
+  createTask, 
+  updateTask, 
+  deleteTask, 
+  getTaskStats, 
+  getStaffPerformanceStats,
+  getOverdueAnalytics
+} from '../controllers/taskController.js';
+
 // Rate limiting tracker
 const requestTracker = new Map();
 
@@ -119,6 +132,30 @@ router.get('/user/:userId', auth, rateLimit, async (req, res) => {
       error: error.message,
       tasks: [], // ✅ Always include empty tasks array on error
       count: 0
+    });
+  }
+});
+
+// @route   GET /api/tasks/analytics/overdue
+// @desc    Get comprehensive overdue analytics for HOD dashboard
+// @access  Private (HOD only)
+router.get('/analytics/overdue', auth, async (req, res) => {
+  try {
+    // Check if user is HOD
+    if (req.user.role !== 'hod') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. HOD role required.'
+      });
+    }
+
+    await getOverdueAnalytics(req, res);
+  } catch (error) {
+    console.error('❌ Overdue analytics route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch overdue analytics',
+      error: error.message
     });
   }
 });
