@@ -1,14 +1,14 @@
-const Task = require('../models/Task');
-const User = require('../models/User');
-const { validationResult } = require('express-validator');
-const mongoose = require('mongoose');
-const { 
+import Task from '../models/Task.js';
+import User from '../models/User.js';
+import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
+import { 
   calculateSubmissionRating, 
   calculatePerformanceScore, 
   updateUserPerformanceStats 
-} = require('../utils/performanceCalculator');
+} from '../utils/performanceCalculator.js';
 
-exports.getAllTasks = async (req, res) => {
+export const getAllTasks = async (req, res) => {
   try {
     const { status, priority, category, assignedTo } = req.query;
     let filter = {};
@@ -31,7 +31,7 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
-exports.getTasksByUser = async (req, res) => {
+export const getTasksByUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const tasks = await Task.find({ assignedTo: userId })
@@ -44,7 +44,7 @@ exports.getTasksByUser = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching user tasks' });
   }
 };
-exports.getTask = async (req, res) => {
+export const getTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id)
       .populate('assignedTo', 'name email')
@@ -62,7 +62,7 @@ exports.getTask = async (req, res) => {
 };
 
 // Create task
-exports.createTask = async (req, res) => {
+export const createTask = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -97,7 +97,7 @@ exports.createTask = async (req, res) => {
 };
 
 // Update task
-exports.updateTask = async (req, res) => {
+export const updateTask = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -261,7 +261,7 @@ exports.updateTask = async (req, res) => {
 };
 
 // Delete task
-exports.deleteTask = async (req, res) => {
+export const deleteTask = async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
 
@@ -277,7 +277,7 @@ exports.deleteTask = async (req, res) => {
 };
 
 // Get task statistics
-exports.getTaskStats = async (req, res) => {
+export const getTaskStats = async (req, res) => {
   try {
     const { userId } = req.query;
     let matchFilter = {};
@@ -339,7 +339,7 @@ exports.getTaskStats = async (req, res) => {
 };
 
 // ✅ NEW: Get staff performance statistics with ratings and performance scores
-exports.getStaffPerformanceStats = async (req, res) => {
+export const getStaffPerformanceStats = async (req, res) => {
   try {
     const { staffId } = req.params;
     
@@ -571,6 +571,327 @@ exports.getStaffPerformanceStats = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Server error while fetching staff performance statistics',
+      error: error.message 
+    });
+  }
+};
+
+// ✅ NEW: Get comprehensive overdue analytics for HOD dashboard
+export const getOverdueAnalytics = async (req, res) => {
+  try {
+    console.log('📊 Fetching comprehensive overdue analytics...');
+    
+    const currentDate = new Date();
+    
+    // Get all overdue tasks (not completed and past due date)
+    const overdueTasks = await Task.find({
+      dueDate: { $lt: currentDate },
+      status: { $nin: ['completed'] }
+    })
+    .populate('assignedTo', 'name email role department')
+    .populate('assignedBy', 'name email role department')
+    .sort({ dueDate: 1 });
+
+    // Total overdue count
+    const totalOverdue = overdueTasks.length;
+
+    // Overdue tasks by staff
+    const overdueByStaff = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'staff'
+        }
+      },
+      { $unwind: '$staff' },
+      {
+        $group: {
+          _id: '$assignedTo',
+          staffName: { $first: '$staff.name' },
+          staffEmail: { $first: '$staff.email' },
+          overdueCount: { $sum: 1 },
+          tasks: {
+            $push: {
+              id: '$_id',
+              title: '$title',
+              dueDate: '$dueDate',
+              priority: '$priority',
+              category: '$category',
+              daysOverdue: {
+                $ceil: {
+                  $divide: [
+                    { $subtract: [currentDate, '$dueDate'] },
+                    86400000 // milliseconds in a day
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { overdueCount: -1 }
+      }
+    ]);
+
+    // Overdue tasks by priority
+    const overdueByPriority = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$priority',
+          count: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Overdue tasks by category
+    const overdueByCategory = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Monthly overdue trend (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+    const overdueTrend = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $gte: twelveMonthsAgo, $lt: currentDate },
+          status: { $nin: ['completed'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$dueDate' },
+            month: { $month: '$dueDate' }
+          },
+          overdueCount: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1 }
+      },
+      {
+        $project: {
+          name: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$_id.month', 1] }, then: 'Jan' },
+                { case: { $eq: ['$_id.month', 2] }, then: 'Feb' },
+                { case: { $eq: ['$_id.month', 3] }, then: 'Mar' },
+                { case: { $eq: ['$_id.month', 4] }, then: 'Apr' },
+                { case: { $eq: ['$_id.month', 5] }, then: 'May' },
+                { case: { $eq: ['$_id.month', 6] }, then: 'Jun' },
+                { case: { $eq: ['$_id.month', 7] }, then: 'Jul' },
+                { case: { $eq: ['$_id.month', 8] }, then: 'Aug' },
+                { case: { $eq: ['$_id.month', 9] }, then: 'Sep' },
+                { case: { $eq: ['$_id.month', 10] }, then: 'Oct' },
+                { case: { $eq: ['$_id.month', 11] }, then: 'Nov' },
+                { case: { $eq: ['$_id.month', 12] }, then: 'Dec' }
+              ],
+              default: 'Unknown'
+            }
+          },
+          overdueCount: 1,
+          averageDaysOverdue: { $round: ['$averageDaysOverdue', 1] }
+        }
+      }
+    ]);
+
+    // Most overdue staff (staff with highest average days overdue)
+    const mostOverdueStaff = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'staff'
+        }
+      },
+      { $unwind: '$staff' },
+      {
+        $group: {
+          _id: '$assignedTo',
+          staffName: { $first: '$staff.name' },
+          staffEmail: { $first: '$staff.email' },
+          overdueCount: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          },
+          maxDaysOverdue: {
+            $max: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { averageDaysOverdue: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    // Department-wise overdue statistics
+    const overdueByDepartment = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'staff'
+        }
+      },
+      { $unwind: '$staff' },
+      {
+        $group: {
+          _id: '$staff.department',
+          count: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Critical overdue tasks (more than 7 days overdue)
+    const criticalOverdue = overdueTasks.filter(task => {
+      const daysOverdue = Math.ceil((currentDate - new Date(task.dueDate)) / (1000 * 60 * 60 * 24));
+      return daysOverdue > 7;
+    }).length;
+
+    console.log('📊 Overdue Analytics Generated:', {
+      totalOverdue,
+      criticalOverdue,
+      staffWithOverdue: overdueByStaff.length,
+      trendDataPoints: overdueTrend.length
+    });
+
+    res.json({
+      success: true,
+      analytics: {
+        totalOverdue,
+        criticalOverdue,
+        overdueByStaff,
+        overdueByPriority,
+        overdueByCategory,
+        overdueByDepartment,
+        overdueTrend,
+        mostOverdueStaff,
+        summary: {
+          totalTasks: await Task.countDocuments(),
+          overduePercentage: totalOverdue > 0 ? Math.round((totalOverdue / await Task.countDocuments()) * 100) : 0,
+          averageDaysOverdue: overdueTasks.length > 0 ? 
+            Math.round(overdueTasks.reduce((sum, task) => {
+              const daysOverdue = Math.ceil((currentDate - new Date(task.dueDate)) / (1000 * 60 * 60 * 24));
+              return sum + daysOverdue;
+            }, 0) / overdueTasks.length) : 0
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Get overdue analytics error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching overdue analytics',
       error: error.message 
     });
   }
