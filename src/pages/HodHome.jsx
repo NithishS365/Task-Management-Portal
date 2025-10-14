@@ -125,7 +125,7 @@ export function HodHome() {
       // Initialize last 30 days
       for (let i = 29; i >= 0; i--) {
         const date = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
-        const dayKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayKey = `Day ${date.getDate()}`; // Format as "Day 14" to avoid date parsing issues
         dailyData[dayKey] = { 
           name: dayKey, 
           date: date.toISOString().split('T')[0],
@@ -139,7 +139,7 @@ export function HodHome() {
       if (tasks && tasks.length > 0) {
         tasks.forEach(task => {
           const taskDate = new Date(task.completedAt || task.dueDate || task.createdAt);
-          const dayKey = taskDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const dayKey = `Day ${taskDate.getDate()}`; // Format as "Day 14" to avoid date parsing issues
           
           if (dailyData[dayKey]) {
             if (task.status === 'completed') {

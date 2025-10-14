@@ -95,10 +95,7 @@ export function Home() {
                 
                 for (let i = 0; i < 30; i++) {
                     const currentDate = new Date(thirtyDaysAgo.getTime() + (i * 24 * 60 * 60 * 1000));
-                    const dayString = currentDate.toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                    });
+                    const dayString = `Day ${currentDate.getDate()}`; // Format as "Day 14" to avoid date parsing issues
                     
                     const dayTasks = userTasks.filter(task => {
                         const taskDate = new Date(task.createdAt);
@@ -249,15 +246,15 @@ export function Home() {
                 <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
                     {/* Line Chart */}
                     <div className="bg-white rounded-xl p-4 shadow flex flex-col">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-indigo-600 font-bold text-lg">
+                        <div className="flex items-center mb-4">
+                            <h3 className="text-indigo-600 ml-52 font-bold text-lg">
                                 Task Progress
                             </h3>
                             {/* ✅ Add dropdown for view mode */}
                             <select
                                 value={viewMode}
                                 onChange={(e) => setViewMode(e.target.value)}
-                                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="px-3 py-1 ml-20 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                             >
                                 <option value="days">Last 30 Days</option>
                                 <option value="months">This Year (Months)</option>
@@ -271,9 +268,9 @@ export function Home() {
                                     <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
                                     <XAxis 
                                         dataKey="name" 
-                                        angle={viewMode === 'days' ? -45 : 0}
+                                        angle={viewMode === 'days' ? 0 : 0}
                                         textAnchor={viewMode === 'days' ? 'end' : 'middle'}
-                                        height={viewMode === 'days' ? 60 : 30}
+                                        height={viewMode === 'days' ? 30 : 30}
                                         interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
                                     />
                                     <YAxis />
@@ -295,7 +292,6 @@ export function Home() {
                         <h3 className="text-indigo-600 font-bold text-lg mb-4 text-center">
                             📊 Task Distribution
                         </h3>
-
                         <div className="flex items-center justify-center flex-1 min-h-0">
                             {/* Pie Chart - Optimized for label visibility */}
                             <div className="flex-1 h-full max-w-[60%]">
