@@ -144,6 +144,27 @@ class ApiService {
       body: JSON.stringify(passwordData)
     });
   }
+
+  // Analytics endpoints for HOD dashboard
+  async getTaskStats() {
+    return this.makeRequest('/tasks/statistics');
+  }
+
+  async getOverdueAnalytics() {
+    return this.makeRequest('/tasks/analytics/overdue');
+  }
+
+  async getHistoricalOverdueAnalytics() {
+    return this.makeRequest('/tasks/analytics/historical-overdue');
+  }
+
+  async getStaffPerformanceStats(staffId) {
+    return this.makeRequest(`/tasks/staff/${staffId}/statistics`);
+  }
+
+  async getAllStaffPerformance() {
+    return this.makeRequest('/tasks/analytics/all-staff-performance');
+  }
 }
 
 //  CREATE INSTANCE
@@ -159,6 +180,11 @@ export const getTasks = () => apiService.getTasks();
 export const createTask = (taskData) => apiService.createTask(taskData);
 export const updateTask = (taskId, taskData) => apiService.updateTask(taskId, taskData);
 export const deleteTask = (taskId) => apiService.deleteTask(taskId);
+export const getTaskStats = () => apiService.getTaskStats();
+export const getOverdueAnalytics = () => apiService.getOverdueAnalytics();
+export const getHistoricalOverdueAnalytics = () => apiService.getHistoricalOverdueAnalytics();
+export const getStaffPerformanceStats = (staffId) => apiService.getStaffPerformanceStats(staffId);
+export const getAllStaffPerformance = () => apiService.getAllStaffPerformance();
 
 //  EXPORT BOTH WAYS
 export { apiService };

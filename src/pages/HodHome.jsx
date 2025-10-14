@@ -555,7 +555,7 @@ export function HodHome() {
                   tick={{ fill: '#A0AEC0' }}
                   angle={viewMode === 'days' ? -45 : 0}
                   textAnchor={viewMode === 'days' ? 'end' : 'middle'}
-                  height={viewMode === 'days' ? 80 : 30}
+                  height={viewMode === 'days' ? 60 : 30}
                   interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
                 />
                 <YAxis tick={{ fill: '#A0AEC0' }} />
@@ -581,7 +581,7 @@ export function HodHome() {
               <span className="text-orange-500">📊</span> Task Distribution (Priority-Based)
             </h3>
             <div className="w-full flex justify-center items-center">
-              <PieChart width={340} height={320}>
+              <PieChart width={540} height={320}>
                 <Pie
                   data={donutData}
                   cx="50%"

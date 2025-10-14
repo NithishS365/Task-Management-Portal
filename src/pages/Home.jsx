@@ -9,6 +9,7 @@ import {
     Tooltip,
     PieChart,
     Pie,
+    Label,
     Cell,
 } from 'recharts';
 import { Eventcalendar, setOptions, Toast } from '@mobiscroll/react';
@@ -314,6 +315,7 @@ export function Home() {
                                             {pieData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
+                                            <Label value="Total Tasks" position="center" fill="#A0AEC0" fontSize={13} />
                                         </Pie>
                                         <Tooltip />
                                     </PieChart>
