@@ -200,31 +200,66 @@ export const Staff_Stat = () => {
     } else {
       // Generate daily data for the last 30 days
       const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      today.setHours(23, 59, 59, 999); // Set to end of today
       const dailyData = [];
       
-      for (let i = 0; i < 30; i++) {
-        const currentDate = new Date(thirtyDaysAgo.getTime() + (i * 24 * 60 * 60 * 1000));
-        const dayString = currentDate.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        });
+      for (let i = 29; i >= 0; i--) {
+        const currentDate = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
+        currentDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+        const dayString = `Day ${currentDate.getDate()}`; // Format as "Day 14" to avoid date parsing issues
         
+        // Filter tasks that are relevant to this day (created, due, or completed on this day)
         const dayTasks = tasks.filter(task => {
-          const taskDate = new Date(task.createdAt);
-          return taskDate.toDateString() === currentDate.toDateString();
+          const taskCreatedDate = new Date(task.createdAt);
+          const taskDueDate = task.dueDate ? new Date(task.dueDate) : null;
+          const taskCompletedDate = task.completedAt ? new Date(task.completedAt) : null;
+          
+          const currentDateString = currentDate.toDateString();
+          
+          return (
+            taskCreatedDate.toDateString() === currentDateString ||
+            (taskDueDate && taskDueDate.toDateString() === currentDateString) ||
+            (taskCompletedDate && taskCompletedDate.toDateString() === currentDateString)
+          );
         });
         
-        const completed = dayTasks.filter(task => task.status === 'completed').length;
-        const pending = dayTasks.filter(task => task.status === 'pending').length;
+        const completed = dayTasks.filter(task => {
+          if (task.status === 'completed') {
+            // Count as completed on this day if completed on this day
+            const completedDate = task.completedAt ? new Date(task.completedAt) : new Date(task.createdAt);
+            return completedDate.toDateString() === currentDate.toDateString();
+          }
+          return false;
+        }).length;
+        
+        const pending = dayTasks.filter(task => {
+          if (task.status === 'pending' || task.status === 'in-progress') {
+            // Count as pending if task was created or due on this day and still pending
+            return true;
+          }
+          return false;
+        }).length;
+        
         const missed = dayTasks.filter(task => {
-          const dueDate = new Date(task.dueDate);
-          const now = new Date();
-          return dueDate < now && !['completed', 'ForApproval'].includes(task.status);
+          if (task.dueDate) {
+            const dueDate = new Date(task.dueDate);
+            const now = new Date();
+            return dueDate.toDateString() === currentDate.toDateString() && 
+                   dueDate < now && 
+                   !['completed', 'ForApproval'].includes(task.status);
+          }
+          return false;
         }).length;
         
         // Calculate average performance for day
-        const ratedTasks = dayTasks.filter(task => task.performanceScore && task.performanceScore > 0);
+        const ratedTasks = dayTasks.filter(task => {
+          if (task.performanceScore && task.performanceScore > 0) {
+            const completedDate = task.completedAt ? new Date(task.completedAt) : null;
+            return completedDate && completedDate.toDateString() === currentDate.toDateString();
+          }
+          return false;
+        });
+        
         const avgPerformance = ratedTasks.length > 0 
           ? ratedTasks.reduce((sum, task) => sum + task.performanceScore, 0) / ratedTasks.length 
           : 0;

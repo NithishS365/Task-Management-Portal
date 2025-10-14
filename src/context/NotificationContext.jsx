@@ -190,14 +190,7 @@ export const NotificationProvider = ({ children }) => {
   // ✅ CREATE DEMO NOTIFICATIONS FOR DEVELOPMENT
   const createDemoNotifications = (user) => {
     return [
-      {
-        _id: 'demo-1',
-        title: 'System Notification',
-        message: `Welcome ${user.name}! This is a demo notification to show the notification system working.`,
-        type: 'system',
-        read: false,
-        createdAt: new Date()
-      },
+      
       {
         _id: 'demo-2',
         title: 'Task Reminder',
