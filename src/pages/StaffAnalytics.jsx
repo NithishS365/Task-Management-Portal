@@ -47,7 +47,7 @@ export const StaffAnalytics = () => {
         
         // Prepare chart data
         const chartDataFormatted = staff.map(s => ({
-          name: s.user.name.split(' ').slice(-1)[0], // Last name only for better display
+          name: s.user.name.split(' ').slice(-1)[0], 
           completionRate: s.stats.completionRate,
           totalTasks: s.stats.totalTasks,
           completedTasks: s.stats.completedTasks,
