@@ -14,7 +14,7 @@ import {
 import { Eventcalendar, setOptions, Toast } from '@mobiscroll/react';
 import '@mobiscroll/react/dist/css/mobiscroll.min.css';
 import Header from "../components/Header";
-import { useTask } from '../context/TaskContext';
+import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 
 setOptions({
@@ -36,6 +36,8 @@ export function Home() {
     });
     const [taskData, setTaskData] = useState([]);
     const [taskCategories, setTaskCategories] = useState([]);
+    // ✅ NEW: Add view mode state
+    const [viewMode, setViewMode] = useState('days'); // 'days' or 'months'
 
     const myView = { calendar: { labels: true } };
 
@@ -66,24 +68,53 @@ export function Home() {
             };
             setTaskStats(stats);
 
-            // Generate monthly data for charts
-            const currentYear = new Date().getFullYear();
-            const monthlyData = [];
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            // ✅ Generate data based on view mode
+            let chartData = [];
             
-            for (let i = 0; i < 12; i++) {
-                const monthTasks = userTasks.filter(task => {
-                    const taskDate = new Date(task.createdAt);
-                    return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
-                });
+            if (viewMode === 'months') {
+                // Generate monthly data for charts
+                const currentYear = new Date().getFullYear();
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 
-                monthlyData.push({
-                    name: monthNames[i],
-                    Completed: monthTasks.filter(task => task.status === 'completed').length,
-                    Pending: monthTasks.filter(task => task.status !== 'completed').length
-                });
+                for (let i = 0; i < 12; i++) {
+                    const monthTasks = userTasks.filter(task => {
+                        const taskDate = new Date(task.createdAt);
+                        return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
+                    });
+                    
+                    chartData.push({
+                        name: monthNames[i],
+                        Completed: monthTasks.filter(task => task.status === 'completed').length,
+                        Pending: monthTasks.filter(task => task.status !== 'completed').length
+                    });
+                }
+            } else {
+                // Generate daily data for the last 30 days
+                const today = new Date();
+                const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+                
+                for (let i = 0; i < 30; i++) {
+                    const currentDate = new Date(thirtyDaysAgo.getTime() + (i * 24 * 60 * 60 * 1000));
+                    const dayString = currentDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    
+                    const dayTasks = userTasks.filter(task => {
+                        const taskDate = new Date(task.createdAt);
+                        return taskDate.toDateString() === currentDate.toDateString();
+                    });
+                    
+                    chartData.push({
+                        name: dayString,
+                        date: currentDate.toISOString().split('T')[0], // for tooltip
+                        Completed: dayTasks.filter(task => task.status === 'completed').length,
+                        Pending: dayTasks.filter(task => task.status !== 'completed').length
+                    });
+                }
             }
-            setTaskData(monthlyData);
+            
+            setTaskData(chartData);
 
             // Generate task categories from actual data
             const categories = {};
@@ -124,7 +155,7 @@ export function Home() {
             setTaskCategories([]);
             setEvents([]);
         }
-    }, [tasks, user]);
+    }, [tasks, user, viewMode]); // ✅ Add viewMode to dependency array
 
     // Pie chart data
     const pieData = [
@@ -136,7 +167,7 @@ export function Home() {
     const COLORS = ['#10B981', '#3B82F6', '#EF4444'];
 
     return (
-        <div className="h-screen dark:bg-gray-900 overflow-hidden flex flex-col">
+        <div className="h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden font-Montserrat flex flex-col">
             <Header />
             {/* Main Content */}
             <div className='p-4 flex-1 flex flex-col min-h-0'>
@@ -148,15 +179,15 @@ export function Home() {
                         {/* Status Cards - Reduced height */}
                         <div className="flex gap-4 h-[25%]">
                             <div className="bg-green-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
-                                <h2 className="text-3xl font-bold text-green-600">{taskStats.completed}</h2>
+                                <h2 className="text-4xl font-bold text-green-600">{taskStats.completed}</h2>
                                 <p className="text-gray-700 font-semibold text-sm">Tasks Completed</p>
                             </div>
                             <div className="bg-blue-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
-                                <h2 className="text-3xl font-bold text-blue-600">{taskStats.inProgress}</h2>
+                                <h2 className="text-4xl font-bold text-blue-600">{taskStats.inProgress}</h2>
                                 <p className="text-gray-700 font-semibold text-sm">On Process</p>
                             </div>
                             <div className="bg-red-100 h-full w-60 rounded-xl p-3 shadow text-center flex flex-col justify-center">
-                                <h2 className="text-3xl font-bold text-red-600">{taskStats.pending}</h2>
+                                <h2 className="text-4xl font-bold text-red-600">{taskStats.pending}</h2>
                                 <p className="text-gray-700 font-semibold text-sm">Pending</p>
                             </div>
                         </div>
@@ -194,8 +225,8 @@ export function Home() {
                     </div>
 
                     <div className="bg-white rounded-xl p-4 shadow overflow-hidden">
-                        <h3 className="text-lg text-center text-indigo-600 font-bold mb-4">
-                            📅 Calendar
+                        <h3 className="text-lg text-indigo-600 font-bold mb-4">
+                            📅 Upcoming Scheduled Tasks
                         </h3>
                         <div className="h-[calc(100%-3rem)]">
                             <Eventcalendar
@@ -218,18 +249,42 @@ export function Home() {
                 <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
                     {/* Line Chart */}
                     <div className="bg-white rounded-xl p-4 shadow flex flex-col">
-                        <h3 className="text-center text-indigo-600 font-bold text-lg mb-4">
-                            Task Progress
-                        </h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-indigo-600 font-bold text-lg">
+                                Task Progress
+                            </h3>
+                            {/* ✅ Add dropdown for view mode */}
+                            <select
+                                value={viewMode}
+                                onChange={(e) => setViewMode(e.target.value)}
+                                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            >
+                                <option value="days">Last 30 Days</option>
+                                <option value="months">This Year (Months)</option>
+                            </select>
+                        </div>
                         <div className="flex-1 min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={taskData}>
                                     <Line type="monotone" dataKey="Completed" stroke="#10B981" strokeWidth={2} />
                                     <Line type="monotone" dataKey="Pending" stroke="#EF4444" strokeWidth={2} />
                                     <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-                                    <XAxis dataKey="name" />
+                                    <XAxis 
+                                        dataKey="name" 
+                                        angle={viewMode === 'days' ? -45 : 0}
+                                        textAnchor={viewMode === 'days' ? 'end' : 'middle'}
+                                        height={viewMode === 'days' ? 60 : 30}
+                                        interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
+                                    />
                                     <YAxis />
-                                    <Tooltip />
+                                    <Tooltip 
+                                        labelFormatter={(value, payload) => {
+                                            if (viewMode === 'days' && payload && payload[0]) {
+                                                return `Date: ${value}`;
+                                            }
+                                            return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
+                                        }}
+                                    />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -242,8 +297,8 @@ export function Home() {
                         </h3>
 
                         <div className="flex items-center justify-center flex-1 min-h-0">
-                            {/* Pie Chart - Increased size */}
-                            <div className="flex-1 h-full">
+                            {/* Pie Chart - Optimized for label visibility */}
+                            <div className="flex-1 h-full max-w-[60%]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
@@ -251,10 +306,10 @@ export function Home() {
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
-                                            outerRadius="80%"
-                                            innerRadius="30%"
+                                            outerRadius="90%"
+                                            innerRadius="60%"
                                             dataKey="value"
-                                            label={({ name, value }) => `${name}: ${value}`}
+                                            label={false}
                                         >
                                             {pieData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -265,15 +320,15 @@ export function Home() {
                                 </ResponsiveContainer>
                             </div>
 
-                            <div className="flex flex-col space-y-3 ml-4 min-w-0">
+                            {/* Legend - Better positioned and sized */}
+                            <div className="flex flex-col justify-center space-y-3 ml-6 min-w-[120px]">
                                 {pieData.map((entry, index) => (
-                                    <div key={index} className="flex items-center space-x-2">
+                                    <div key={index} className="flex items-center space-x-3">
                                         <div className="w-4 h-4 rounded-sm flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                        <span className="text-gray-700 font-medium text-sm">
-                                            {entry.name}
-                                            <br />
-                                            <span className="text-gray-500">({entry.value})</span>
-                                        </span>
+                                        <div className="text-gray-700 font-medium text-sm">
+                                            <div>{entry.name}</div>
+                                            <div className="text-gray-500 text-xs">({entry.value} tasks)</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

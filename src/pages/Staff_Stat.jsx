@@ -20,6 +20,9 @@ export const Staff_Stat = () => {
   const location = useLocation();
   const [staff, setStaff] = useState(null);
   const [taskData, setTaskData] = useState([]);
+  // ✅ NEW: Add view mode state and raw tasks storage
+  const [viewMode, setViewMode] = useState('days'); // 'days' or 'months'
+  const [rawTasks, setRawTasks] = useState([]); // Store raw task data for reprocessing
   const [taskStats, setTaskStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -66,7 +69,14 @@ export const Staff_Stat = () => {
           console.log('✅ Performance statistics loaded successfully:', data);
           
           setTaskStats(data.statistics);
-          setTaskData(data.monthlyData || []);
+          // ✅ Process task data based on current view mode
+          if (data.tasks) {
+            setRawTasks(data.tasks); // Store raw tasks
+            const processedData = processTaskDataByViewMode(data.tasks, viewMode);
+            setTaskData(processedData);
+          } else {
+            setTaskData(data.monthlyData || []);
+          }
           setPriorityDistribution(data.priorityDistribution || {});
           setCategoryDistribution(data.categoryDistribution || {});
           setRecentRatedTasks(data.recentRatedTasks || []);
@@ -130,6 +140,10 @@ export const Staff_Stat = () => {
           };
           
           setTaskStats(stats);
+          // ✅ Process task data based on current view mode
+          setRawTasks(tasks); // Store raw tasks
+          const processedData = processTaskDataByViewMode(tasks, viewMode);
+          setTaskData(processedData);
           return true;
         } else {
           throw new Error('Failed to fetch basic statistics');
@@ -140,6 +154,92 @@ export const Staff_Stat = () => {
     } catch (error) {
       console.error('❌ Error fetching basic task statistics:', error);
       throw error;
+    }
+  };
+
+  // ✅ NEW: Function to process task data based on view mode
+  const processTaskDataByViewMode = (tasks, mode) => {
+    if (!tasks || tasks.length === 0) return [];
+
+    if (mode === 'months') {
+      // Generate monthly data
+      const currentYear = new Date().getFullYear();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyData = [];
+      
+      for (let i = 0; i < 12; i++) {
+        const monthTasks = tasks.filter(task => {
+          const taskDate = new Date(task.createdAt);
+          return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
+        });
+        
+        const completed = monthTasks.filter(task => task.status === 'completed').length;
+        const pending = monthTasks.filter(task => task.status === 'pending').length;
+        const missed = monthTasks.filter(task => {
+          const dueDate = new Date(task.dueDate);
+          const now = new Date();
+          return dueDate < now && !['completed', 'ForApproval'].includes(task.status);
+        }).length;
+        
+        // Calculate average performance for month
+        const ratedTasks = monthTasks.filter(task => task.performanceScore && task.performanceScore > 0);
+        const avgPerformance = ratedTasks.length > 0 
+          ? ratedTasks.reduce((sum, task) => sum + task.performanceScore, 0) / ratedTasks.length 
+          : 0;
+        
+        monthlyData.push({
+          name: monthNames[i],
+          Completed: completed,
+          Pending: pending,
+          Missed: missed,
+          Performance: Number(avgPerformance.toFixed(1))
+        });
+      }
+      
+      return monthlyData;
+    } else {
+      // Generate daily data for the last 30 days
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      const dailyData = [];
+      
+      for (let i = 0; i < 30; i++) {
+        const currentDate = new Date(thirtyDaysAgo.getTime() + (i * 24 * 60 * 60 * 1000));
+        const dayString = currentDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        
+        const dayTasks = tasks.filter(task => {
+          const taskDate = new Date(task.createdAt);
+          return taskDate.toDateString() === currentDate.toDateString();
+        });
+        
+        const completed = dayTasks.filter(task => task.status === 'completed').length;
+        const pending = dayTasks.filter(task => task.status === 'pending').length;
+        const missed = dayTasks.filter(task => {
+          const dueDate = new Date(task.dueDate);
+          const now = new Date();
+          return dueDate < now && !['completed', 'ForApproval'].includes(task.status);
+        }).length;
+        
+        // Calculate average performance for day
+        const ratedTasks = dayTasks.filter(task => task.performanceScore && task.performanceScore > 0);
+        const avgPerformance = ratedTasks.length > 0 
+          ? ratedTasks.reduce((sum, task) => sum + task.performanceScore, 0) / ratedTasks.length 
+          : 0;
+        
+        dailyData.push({
+          name: dayString,
+          date: currentDate.toISOString().split('T')[0],
+          Completed: completed,
+          Pending: pending,
+          Missed: missed,
+          Performance: Number(avgPerformance.toFixed(1))
+        });
+      }
+      
+      return dailyData;
     }
   };
 
@@ -203,25 +303,33 @@ export const Staff_Stat = () => {
     }
   }, [id, location.state]);
 
+  // ✅ NEW: useEffect to reprocess data when view mode changes
+  useEffect(() => {
+    if (rawTasks && rawTasks.length > 0) {
+      const processedData = processTaskDataByViewMode(rawTasks, viewMode);
+      setTaskData(processedData);
+    }
+  }, [viewMode, rawTasks]);
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-        <p className="text-lg text-gray-600">Loading staff details...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mb-4"></div>
+        <p className="text-lg text-gray-600 dark:text-gray-400">Loading staff details...</p>
       </div>
     );
   }
 
   if (error || !staff) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
         <Header />
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-gray-900/50 p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700">
             <div className="text-center">
               <div className="text-6xl mb-4">❌</div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Staff Data</h2>
-              <p className="text-gray-600 mb-6">{error || 'Staff data not found.'}</p>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Unable to Load Staff Data</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">{error || 'Staff data not found.'}</p>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate(-1)}
@@ -244,7 +352,7 @@ export const Staff_Stat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       <div className="flex flex-col items-center py-0 px-4">
         <button
@@ -258,27 +366,38 @@ export const Staff_Stat = () => {
         <div className="flex flex-col md:flex-row w-full gap-8">
           <div className="flex flex-col items-center md:w-1/3">
             <img
-              src={staff.profileImage || staff.imageUrl || 'https://via.placeholder.com/150'}
+              src={staff.profileImage || staff.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
               alt={staff.fullName || staff.name}
               className="w-36 h-48 border-4 mb-4 shadow object-cover rounded-lg"
               onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/150';
+                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
               }}
             />
             <h2 className="text-2xl font-bold text-indigo-800 mb-1">{staff.fullName || staff.name}</h2>
             <p className="text-gray-600 font-medium mb-1">{staff.designation || 'Faculty'}</p>
             <p className="text-gray-500 text-center text-sm mb-2">{staff.department || 'Department N/A'}</p>
             
-            {/* Quick Performance Indicator */}
-            <div className="w-full bg-gray-200 rounded-full px-3 py-1 mb-4">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-700">Performance</span>
-                <span className={`font-bold ${
-                  taskStats.completionRate >= 80 ? 'text-green-600' :
-                  taskStats.completionRate >= 60 ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                  {taskStats.completionRate}%
-                </span>
+            {/* Performance Indicator */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-4 text-white mt-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-lg font-semibold">Overall Performance</div>
+                  <div className="text-sm opacity-90">
+                    Grade: {taskStats.performanceGrade?.grade} - {taskStats.performanceGrade?.description}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">
+                    {taskStats.averagePerformanceScore ? taskStats.averagePerformanceScore.toFixed(1) : '0.0'}/10
+                  </div>
+                  <div className="text-sm opacity-90">Performance Score</div>
+                </div>
+              </div>
+              <div className="mt-2 bg-white bg-opacity-20 rounded-full h-2">
+                <div 
+                  className="bg-white rounded-full h-2 transition-all duration-500"
+                  style={{ width: `${taskStats.performanceGrade?.percentage || 0}%` }}
+                ></div>
               </div>
             </div>
 
@@ -355,29 +474,7 @@ export const Staff_Stat = () => {
           </div>
           <div className="flex-1 flex flex-col gap-6">
     
-            {/* Performance Indicator */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-4 text-white mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-lg font-semibold">Overall Performance</div>
-                  <div className="text-sm opacity-90">
-                    Grade: {taskStats.performanceGrade?.grade} - {taskStats.performanceGrade?.description}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">
-                    {taskStats.averagePerformanceScore ? taskStats.averagePerformanceScore.toFixed(1) : '0.0'}/10
-                  </div>
-                  <div className="text-sm opacity-90">Performance Score</div>
-                </div>
-              </div>
-              <div className="mt-2 bg-white bg-opacity-20 rounded-full h-2">
-                <div 
-                  className="bg-white rounded-full h-2 transition-all duration-500"
-                  style={{ width: `${taskStats.performanceGrade?.percentage || 0}%` }}
-                ></div>
-              </div>
-            </div>
+
 
 
             {/* ✅ NEW: Recent Rated Tasks Section */}
@@ -417,7 +514,7 @@ export const Staff_Stat = () => {
               </div>
             )}
 
-            {/* Completion Rate Indicator (Enhanced) */}
+            {/* Completion Rate Indicator (Enhanced)
             <div className="bg-gradient-to-r from-teal-500 to-blue-600 rounded-lg p-4 text-white mb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -437,22 +534,47 @@ export const Staff_Stat = () => {
                   Avg. completion time: {taskStats.avgCompletionTime} days
                 </div>
               )}
-            </div>
+            </div> */}
 
-            <div className="flex-1 flex flex-col gap-8">
+            <div className="flex-1 flex flex-col gap-4">
             <div className="bg-gray-50 rounded-xl p-4 shadow flex-1">
-              <h3 className="text-lg font-bold text-indigo-700 mb-2">Monthly Task Performance (Bar Chart)</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-bold text-indigo-700">
+                  Task Performance ({viewMode === 'days' ? 'Last 30 Days' : 'This Year'})
+                </h3>
+                {/* ✅ Add dropdown for view mode */}
+                <select
+                  value={viewMode}
+                  onChange={(e) => setViewMode(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="days">Last 30 Days</option>
+                  <option value="months">This Year (Months)</option>
+                </select>
+              </div>
               {taskData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={taskData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={viewMode === 'days' ? -45 : 0}
+                      textAnchor={viewMode === 'days' ? 'end' : 'middle'}
+                      height={viewMode === 'days' ? 60 : 30}
+                      interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
+                    />
                     <YAxis />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#f8fafc', 
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px'
+                      }}
+                      labelFormatter={(value, payload) => {
+                        if (viewMode === 'days' && payload && payload[0]) {
+                          return `Date: ${value}`;
+                        }
+                        return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
                       }}
                     />
                     <Legend />
@@ -474,18 +596,32 @@ export const Staff_Stat = () => {
               )}
             </div>
             <div className="bg-gray-50 rounded-xl p-4 shadow flex-1">
-              <h3 className="text-lg font-bold text-indigo-700 mb-2">Performance Trend (Area Chart)</h3>
+              <h3 className="text-lg font-bold text-indigo-700 mb-2">
+                Performance Trend ({viewMode === 'days' ? 'Last 30 Days' : 'This Year'})
+              </h3>
               {taskData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={taskData}>
                     <CartesianGrid stroke="#ccc" strokeDasharray="7 5" />
-                    <XAxis dataKey="name" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={viewMode === 'days' ? -45 : 0}
+                      textAnchor={viewMode === 'days' ? 'end' : 'middle'}
+                      height={viewMode === 'days' ? 60 : 30}
+                      interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
+                    />
                     <YAxis />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#f8fafc', 
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px'
+                      }}
+                      labelFormatter={(value, payload) => {
+                        if (viewMode === 'days' && payload && payload[0]) {
+                          return `Date: ${value}`;
+                        }
+                        return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
                       }}
                     />
                     <Legend />

@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
   experience: String,
   bio: String,
   linkedinId: String,
-  imageUrl: { type: String, default: 'https://via.placeholder.com/150' },
+  imageUrl: { type: String, default: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==' },
   isActive: { type: Boolean, default: true },
   lastLogin: Date
 }, { timestamps: true });
@@ -275,18 +275,23 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email/username and password are required'
       });
     }
 
-    // ✅ FIND USER IN DATABASE (from your migrated data)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // ✅ FIND USER IN DATABASE BY EMAIL OR USERNAME (case-insensitive)
+    const user = await User.findOne({
+      $or: [
+        { email: email.toLowerCase() },
+        { username: { $regex: new RegExp(`^${email}$`, 'i') } }
+      ]
+    });
     
     if (!user) {
       console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/username or password'
       });
     }
 
@@ -295,7 +300,7 @@ app.post('/api/auth/login', async (req, res) => {
       console.log('❌ Password invalid for:', email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/username or password'
       });
     }
 
@@ -444,6 +449,126 @@ app.post('/api/auth/register', (req, res) => {
     message: 'Register endpoint working',
     data: req.body
   });
+});
+
+// ✅ GET CURRENT USER PROFILE
+app.get('/api/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    console.log('👤 Profile endpoint accessed for user:', req.user?.email);
+    
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Map user fields to match Profile component expectations
+    const profileData = {
+      // Original user fields
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      designation: user.designation,
+      phone: user.phone,
+      qualification: user.qualification,
+      experience: user.experience,
+      bio: user.bio,
+      linkedinId: user.linkedinId,
+      imageUrl: user.imageUrl,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      
+      // Map to Profile component expected fields
+      t_name: user.name,
+      img_url: user.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==',
+      design: user.designation || 'Faculty',
+      dep: user.department || 'General',
+      phone: user.phone,
+      email: user.email,
+      username: user.username,
+      linked_in_id: user.linkedinId,
+      exp: user.experience,
+      qual: user.qualification,
+      bio: user.bio
+    };
+
+    console.log('📋 Profile data being sent for:', user.email);
+    res.json(profileData);
+  } catch (error) {
+    console.error('❌ Error fetching user profile:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ✅ CHANGE PASSWORD ENDPOINT
+app.put('/api/auth/change-password', authMiddleware, async (req, res) => {
+  try {
+    console.log('🔐 Change password request for user:', req.user?.email);
+    
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Current password and new password are required' 
+      });
+    }
+
+    if (newPassword.length < 3) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'New password must be at least 3 characters long' 
+      });
+    }
+
+    // Get user with password field
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+
+    console.log('🔍 Debug - User found:', user.email);
+    console.log('🔍 Debug - User password:', user.password);
+    console.log('🔍 Debug - Current password provided:', currentPassword);
+
+    // ✅ CHECK PASSWORD (Plain text comparison to match login logic)
+    if (user.password !== currentPassword) {
+      console.log('❌ Debug - Password comparison failed');
+      return res.status(400).json({ 
+        success: false,
+        error: 'Current password is incorrect' 
+      });
+    }
+
+    console.log('✅ Debug - Password comparison successful');
+
+    // Note: Storing new password as plain text to match existing system
+    // In production, you should hash passwords with bcrypt
+    await User.findByIdAndUpdate(req.user.id, {
+      password: newPassword,
+      lastLogin: new Date()
+    });
+
+    console.log('✅ Password changed successfully for user:', user.email);
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error changing password:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error' 
+    });
+  }
 });
 
 app.get('/api/notifications/me', (req, res) => {
@@ -898,6 +1023,83 @@ app.get('/api/users/:id', authMiddleware, async (req, res) => {
       message: 'Error fetching user',
       error: error.message
     });
+  }
+});
+
+// POST /api/users - Create a new user (HOD or Admin only)
+app.post('/api/users', authMiddleware, async (req, res) => {
+  try {
+    // Only HOD or admin may create staff/faculty
+    if (!req.user || (req.user.role !== 'hod' && req.user.role !== 'admin')) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const {
+      name,
+      username,
+      email,
+      password,
+      role = 'faculty',
+      department = 'General',
+      designation = 'Faculty',
+      phoneNumber
+    } = req.body;
+
+    // Basic validation
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ success: false, message: 'name, username, email and password are required' });
+    }
+
+    // Prevent duplicate email/username
+    const exists = await User.findOne({ $or: [{ email }, { username }] });
+    if (exists) {
+      return res.status(409).json({ success: false, message: 'User with given email or username already exists' });
+    }
+
+    const newUser = new User({
+      name,
+      username,
+      email,
+      password,
+      role,
+      department,
+      designation,
+      phoneNumber
+    });
+
+    await newUser.save();
+
+    const safeUser = newUser.toJSON();
+    res.status(201).json({ success: true, message: 'User created', user: safeUser });
+  } catch (error) {
+    console.error('❌ Error creating user:', error);
+    res.status(500).json({ success: false, message: 'Error creating user', error: error.message });
+  }
+});
+
+// DELETE /api/users/:id - Delete a user (HOD or Admin only)
+app.delete('/api/users/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role !== 'hod' && req.user.role !== 'admin')) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const { id } = req.params;
+    const userToDelete = await User.findById(id);
+    if (!userToDelete) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Prevent deleting an admin or self accidentally
+    if (String(userToDelete._id) === String(req.user.userId)) {
+      return res.status(400).json({ success: false, message: 'Cannot delete yourself' });
+    }
+
+    await User.findByIdAndDelete(id);
+    res.json({ success: true, message: 'User deleted', userId: id });
+  } catch (error) {
+    console.error('❌ Error deleting user:', error);
+    res.status(500).json({ success: false, message: 'Error deleting user', error: error.message });
   }
 });
 

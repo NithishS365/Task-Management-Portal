@@ -104,9 +104,23 @@ export const Login = () => {
         return;
       }
 
-      if (!email.includes('@')) {
-        showToast('Please enter a valid email address', 'error');
-        return;
+      // Enhanced validation - support both email and username
+      if (email.includes('@')) {
+        // If it contains @, validate as email
+        if (!email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
+          showToast('Please enter a valid email address', 'error');
+          return;
+        }
+      } else {
+        // If no @, validate as username
+        if (email.length < 3) {
+          showToast('Username must be at least 3 characters long', 'error');
+          return;
+        }
+        if (!email.match(/^[a-zA-Z0-9_]+$/)) {
+          showToast('Username can only contain letters, numbers, and underscores', 'error');
+          return;
+        }
       }
 
       if (password.length < 3) {
@@ -165,7 +179,7 @@ export const Login = () => {
       let errorMessage = 'Login failed. Please try again.';
       
       if (err.message.includes('401') || err.message.includes('Invalid')) {
-        errorMessage = 'Invalid email or password. Please check your credentials.';
+        errorMessage = 'Invalid email/username or password. Please check your credentials.';
       } else if (err.message.includes('403')) {
         errorMessage = 'Account access denied. Please contact administrator.';
       } else if (err.message.includes('500')) {
@@ -199,31 +213,36 @@ export const Login = () => {
         theme="light"
         style={{ zIndex: 9999 }}
       />
-      <div className="min-h-screen flex items-center justify-center bg-white px-4">
-        <div className="bg-white rounded-2xl shadow-xl  shadow-slate-600 overflow-hidden flex w-full max-w-5xl">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-slate-600 dark:shadow-gray-900/50 overflow-hidden flex w-full max-w-5xl border border-gray-200 dark:border-gray-700">
           <div className="w-full md:w-1/2 p-8">
-            <div className="text-purple-600 flex items-center font-semibold text-2xl mb-4">
+            <div className="text-purple-600 dark:text-purple-400 flex items-center font-semibold text-2xl mb-4">
               <img src={logo} width={30} alt="logo" className="mr-2" />TASKRISE
             </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-1">Hello, Welcome Back</h2>
-            <p className="text-gray-500 mb-5">Your tasks missed you. Let's rise to the challenge.</p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">Hello, Welcome Back</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-5">Your tasks missed you. Let's rise to the challenge.</p>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter Your Username or Email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full mb-3 px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600"
-              />
+              <div className="mb-3">
+                <input
+                  type="text"
+                  name="email"
+                  placeholder="Enter Your Username or Email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-purple-400"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-1">
+                  You can use either your username (e.g., AIDS_HOD001) or email address
+                </p>
+              </div>
 
             <input
               type="password"
@@ -232,26 +251,26 @@ export const Login = () => {
               value={formData.password}
               onChange={handleChange}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
-              className="w-full mb-2 px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600"
+              className="w-full mb-2 px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-purple-400"
             />
 
-            <div className="flex justify-between items-center text-sm text-gray-500 mb-5">
+            <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-5">
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="form-checkbox text-purple-600" />
+                <input type="checkbox" className="form-checkbox text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" />
                 <span>Remember me</span>
               </label>
-              <a className="hover:underline">Forgot Password?</a>
+              <a className="hover:underline text-purple-600 dark:text-purple-400">Forgot Password?</a>
             </div>
 
             <div className="mt-2 mb-4">
               <div
-                className="relative inline-flex items-center bg-gray-200 rounded-full p-1 shadow-sm"
+                className="relative inline-flex items-center bg-gray-200 dark:bg-gray-700 rounded-full p-1 shadow-sm"
                 role="tablist"
                 aria-label="Select role"
               >
                 <div
                   aria-hidden
-                  className={`absolute left-0 top-0 h-full w-1/2 bg-white rounded-full shadow transform transition-transform duration-200 ${
+                  className={`absolute left-0 top-0 h-full w-1/2 bg-white dark:bg-gray-600 rounded-full shadow transform transition-transform duration-200 ${
                     role === 'hod' ? 'translate-x-full' : 'translate-x-0'
                   }`}
                 />
@@ -263,8 +282,8 @@ export const Login = () => {
                   aria-selected={role === 'faculty'}
                   className={`relative z-10 flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                     role === 'faculty'
-                      ? 'text-purple-700'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'text-purple-700 dark:text-purple-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                 >
                   Faculty
@@ -277,16 +296,16 @@ export const Login = () => {
                   aria-selected={role === 'hod'}
                   className={`relative z-10 flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                     role === 'hod'
-                      ? 'text-purple-700'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'text-purple-700 dark:text-purple-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                 >
                   HOD
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Signing in as:{' '}
-                <span className="font-semibold text-gray-700">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
                   {role === 'hod' ? 'HOD' : 'Faculty'}
                 </span>
               </p>

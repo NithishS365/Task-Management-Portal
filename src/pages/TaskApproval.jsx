@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
-import { useTask } from '../context/TaskContext';
+import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { toast } from 'react-toastify';
@@ -192,7 +192,7 @@ export const TaskApproval = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:from-gray-900 dark:to-slate-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
       {/* Main Content */}
@@ -201,7 +201,7 @@ export const TaskApproval = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-4xl font-bold text-indigo-600 dark:text-white mb-2">
                 Task Approval Center
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
