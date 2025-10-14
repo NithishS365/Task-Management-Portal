@@ -1,65 +1,117 @@
 import React, { useEffect, useState } from 'react';
 import  Header  from '../components/Header';
 import { useAuth } from '../context/AuthContext';
-import staffData from '../../public/data/Staff.json';
+import { getCurrentUserProfile, changePassword } from '../services/api';
 
 export const Profile = () => {
   const [staff, setStaff] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
   
   // ✅ FIXED: Use useAuth hook to get current user
   const { user } = useAuth();
 
   useEffect(() => {
-    console.log('🔍 Profile: Current user from context:', user);
-    
-    // ✅ METHOD 1: Use user from AuthContext (PREFERRED)
-    if (user && user.username) {
-      console.log('🔍 Profile: Looking for staff with username:', user.username);
-      const found = staffData.find(
-        (s) => s.username === user.username || s.t_id === user.username || s.id === user.username
-      );
-      console.log('🔍 Profile: Found staff:', found);
-      setStaff(found);
+    const fetchUserProfile = async () => {
+      try {
+        console.log('🔍 Profile: Fetching user profile from MongoDB');
+        
+        // Fetch current user profile from MongoDB
+        const userData = await getCurrentUserProfile();
+        console.log('🔍 Profile: User data received:', userData);
+        
+        setStaff(userData);
+      } catch (error) {
+        console.error('❌ Profile: Error fetching user profile:', error);
+        
+        // Fallback to user from context if available
+        if (user) {
+          console.log('🔍 Profile: Using fallback user from context:', user);
+          setStaff(user);
+        }
+      }
+    };
+
+    // Only fetch if user is authenticated
+    if (user || localStorage.getItem('token')) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  // Handle password change
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear messages when user starts typing
+    if (passwordMessage.text) {
+      setPasswordMessage({ type: '', text: '' });
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    setPasswordMessage({ type: '', text: '' });
+
+    // Validation
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'All fields are required' });
+      setPasswordLoading(false);
       return;
     }
 
-    // ✅ METHOD 2: Fallback to localStorage (if AuthContext fails)
-    const storedUser = localStorage.getItem('user');
-    const currentStaffUsername = localStorage.getItem('currentStaffUsername');
-    
-    console.log('🔍 Profile: Stored user:', storedUser);
-    console.log('🔍 Profile: Current staff username:', currentStaffUsername);
-    
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        console.log('🔍 Profile: Parsed user data:', userData);
-        
-        // Try to find by username from stored user data
-        const found = staffData.find(
-          (s) => s.username === userData.username || 
-                 s.username === userData._id ||
-                 s.t_id === userData.username ||
-                 s.id === userData.username
-        );
-        
-        console.log('🔍 Profile: Found staff from stored user:', found);
-        setStaff(found);
-      } catch (error) {
-        console.error('❌ Profile: Error parsing stored user:', error);
-      }
-    } else if (currentStaffUsername) {
-      // Try with currentStaffUsername
-      const found = staffData.find(
-        (s) => s.username === currentStaffUsername || 
-               s.t_id === currentStaffUsername ||
-               s.id === currentStaffUsername
-      );
-      
-      console.log('🔍 Profile: Found staff from username:', found);
-      setStaff(found);
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'New passwords do not match' });
+      setPasswordLoading(false);
+      return;
     }
-  }, [user]);
+
+    if (passwordForm.newPassword.length < 3) {
+      setPasswordMessage({ type: 'error', text: 'New password must be at least 3 characters long' });
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+
+      setPasswordMessage({ type: 'success', text: 'Password changed successfully!' });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordMessage({ type: '', text: '' });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Password change error:', error);
+      setPasswordMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to change password' 
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordMessage({ type: '', text: '' });
+  };
 
   // ✅ ENHANCED: Better loading/error states
   if (!user && !localStorage.getItem('user')) {
@@ -174,12 +226,110 @@ export const Profile = () => {
         )}
 
         {/* ✅ FIXED: Completed the button className */}
-        <div className="px-8 py-6 flex justify-end bg-white dark:bg-gray-800 rounded-b-3xl">
+        <div className="px-8 py-6 flex justify-end gap-4 bg-white dark:bg-gray-800 rounded-b-3xl">
+          <button 
+            onClick={() => setShowPasswordModal(true)}
+            className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 dark:from-red-600 dark:to-pink-600 dark:hover:from-red-700 dark:hover:to-pink-700 text-white text-sm  px-6 py-3 rounded-lg shadow font-semibold transition"
+          >
+            Change Password
+          </button>
           <button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 dark:from-blue-700 dark:to-cyan-600 dark:hover:from-blue-800 dark:hover:to-cyan-700 text-white text-sm px-8 py-3 rounded-lg shadow font-semibold transition">
             Edit Profile
           </button>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white">Change Password</h3>
+              <button 
+                onClick={closePasswordModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter current password"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter new password"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Confirm new password"
+                  required
+                />
+              </div>
+
+              {/* Message Display */}
+              {passwordMessage.text && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  passwordMessage.type === 'success' 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200' 
+                    : 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200'
+                }`}>
+                  {passwordMessage.text}
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={closePasswordModal}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-3 rounded-lg font-medium transition"
+                >
+                  {passwordLoading ? 'Changing...' : 'Change Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

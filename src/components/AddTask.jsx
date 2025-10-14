@@ -1,126 +1,114 @@
 import React, { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import { useTask } from '../context/TaskContext';
-import { useAuth } from '../context/AuthContext';
-import apiService from '../services/api';
 
 export const AddTask = ({ tasks, setTasks, task, setTask }) => {
   const [due, setDue] = useState(task.due || "");
-  const [loading, setLoading] = useState(false);
-  
-  // Get contexts
-  const { createTask } = useTask();
-  const { user } = useAuth();
 
-  const handletask = async (e) => {
+  const handletask = (e) => {
     e.preventDefault();
     
-    if (!task.name || !due) {
-      toast.error("Please enter a task and select a due date.");
+    if (!task.name || task.name.trim() === "") {
+      toast.error("Please enter a task name.");
       return;
     }
 
-    try {
-      setLoading(true);
-      
-      // ✅ Convert to backend format
-      const taskData = {
-        title: task.name,           // ✅ Map 'name' to 'title'
-        description: task.description || '',
-        dueDate: due,
-        priority: 'Medium',
-        category: 'General',
-        assignedTo: user?._id,      // ✅ Assign to self if no specific user
-        status: 'pending'
+    if (task.id) {
+      // Update existing todo
+      const updatedTasks = tasks.map((todo) =>
+        todo.id === task.id
+          ? {
+              ...todo,
+              name: task.name.trim(),
+              due: due || null,
+              date: todo.date // Keep original creation date
+            }
+          : todo
+      );
+      setTasks(updatedTasks);
+      toast.success("✅ Todo updated successfully!");
+    } else {
+      // Create new todo
+      const newTodo = {
+        id: Date.now(), // Simple ID generation for local storage
+        name: task.name.trim(),
+        date: new Date().toLocaleDateString(),
+        due: due || null,
+        completed: false
       };
-
-      console.log('📝 Creating task with data:', taskData);
-
-      if (task.id) {
-        // Update existing task
-        const updatedTask = await createTask(taskData);
-        
-        // Update local state for compatibility
-        const updatedtasks = tasks.map((todo) =>
-          todo.id === task.id
-            ? {
-                id: updatedTask._id,
-                name: updatedTask.title,
-                date: new Date().toLocaleString(),
-                due: due,
-                _id: updatedTask._id,
-                ...updatedTask
-              }
-            : todo
-        );
-        setTasks(updatedtasks);
-        toast.success("✅ Task updated successfully!");
-      } else {
-        // Create new task
-        const createdTask = await createTask(taskData);
-        
-        // Add to local state for compatibility
-        const newTask = {
-          id: createdTask._id,
-          name: createdTask.title,
-          date: new Date().toLocaleString(),
-          due: due,
-          _id: createdTask._id,
-          ...createdTask
-        };
-        setTasks([...tasks, newTask]);
-        toast.success("✅ Task created successfully!");
-      }
-
-      // Reset form
-      setTask({});
-      setDue("");
-      
-    } catch (error) {
-      console.error('❌ Task creation failed:', error);
-      toast.error(`Failed to create task: ${error.message}`);
-    } finally {
-      setLoading(false);
+      setTasks([...tasks, newTodo]);
+      toast.success("✅ Todo added successfully!");
     }
+
+    // Reset form
+    setTask({});
+    setDue("");
   };
 
-  // Update due date if editing a existing task 
+  // Update due date if editing an existing todo
   React.useEffect(() => {
     setDue(task.due || "");
   }, [task]);
 
   return (
-    <section className="flex font-Montserrat justify-center items-center mt-8">
+    <div className="w-full">
       <ToastContainer />
       <form
         onSubmit={handletask}
-        className="bg-white dark:bg-gray-800 min-w-[400px] max-w-2xl w-full flex flex-col md:flex-row md:justify-evenly items-center gap-4 px-6 py-6 shadow-lg rounded-3xl border border-gray-200 dark:border-gray-700"
-        style={{ transition: "box-shadow 0.3s" }}
+        className="space-y-4"
       >
-        <input
-          type="text"
-          placeholder="Add a Task"
-          name="input"
-          value={task.name || ""}
-          onChange={(e) => setTask({ ...task, name: e.target.value })}
-          className="flex-1 px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none shadow-sm transition dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:focus:ring-green-500"
-          disabled={loading}
-        />
-        <input
-          type="date"
-          value={due}
-          onChange={(e) => setDue(e.target.value)}
-          className="px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none shadow-sm transition dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:focus:ring-green-500"
-          disabled={loading}
-        />
+        {/* Todo Name Input */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Todo Item
+          </label>
+          <input
+            type="text"
+            placeholder="What do you need to do?"
+            name="input"
+            value={task.name || ""}
+            onChange={(e) => setTask({ ...task, name: e.target.value })}
+            className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none shadow-sm transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+          />
+        </div>
+
+        {/* Due Date Input (Optional) */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Due Date <span className="text-gray-500 text-xs">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={due}
+            onChange={(e) => setDue(e.target.value)}
+            className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none shadow-sm transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
+        </div>
+
+        {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading}
-          className="bg-gradient-to-r from-green-600 to-green-500 text-white px-8 py-3 rounded-lg font-semibold text-lg shadow hover:from-green-700 hover:to-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!task.name || task.name.trim() === ""}
+          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100 flex items-center justify-center gap-2"
         >
-          {loading ? "⏳" : task.id ? "Update" : "Add"}
+          <i className={`bi ${task.id ? 'bi-arrow-clockwise' : 'bi-plus-circle'}`}></i>
+          <span>{task.id ? "Update Todo" : "Add Todo"}</span>
         </button>
+
+        {/* Reset button when editing */}
+        {task.id && (
+          <button
+            type="button"
+            onClick={() => {
+              setTask({});
+              setDue("");
+            }}
+            className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            <i className="bi bi-x-circle"></i>
+            <span>Cancel Edit</span>
+          </button>
+        )}
       </form>
-    </section>
+    </div>
   );
 };

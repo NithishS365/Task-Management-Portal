@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import  Header  from "../components/Header";
 import { ToastContainer, toast } from 'react-toastify';
-import { useTask } from '../context/TaskContext';
+import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import apiService from '../services/api';  // ✅ ADD THIS LINE
-import staffData from '../../public/data/staff.json';
+
 
 export function TaskAllocate() {
   const [isOpen, setIsOpen] = useState(false);
@@ -117,65 +117,74 @@ const testNotificationSystem = () => {
     }
   };
 
-  // Load faculty from Staff.json
-  const loadFacultyFromJSON = async () => {
+  // Load faculty from MongoDB via API
+  const loadFacultyFromAPI = async () => {
     try {
       setLoadingStaff(true);
-      console.log('🔄 Starting to load faculty from staff.json...');
+      console.log('🔄 Starting to load faculty from MongoDB API...');
       
-      const possibleUrls = ['/data/staff.json', '/staff.json'];
-      let response = null;
-      let actualUrl = null;
+      // Check authentication first
+      const token = sessionStorage.getItem('token');
+      const userData = sessionStorage.getItem('user');
+      console.log('🔐 Auth check:', { hasToken: !!token, hasUser: !!userData });
       
-      for (const url of possibleUrls) {
-        console.log('🌐 Trying to fetch from:', url);
-        try {
-          response = await fetch(url);
-          if (response.ok) {
-            actualUrl = url;
-            console.log('✅ Successfully found file at:', actualUrl);
-            break;
-          }
-        } catch (fetchError) {
-          console.log('❌ Network error for:', url, fetchError.message);
-        }
+      if (!token) {
+        throw new Error('Not authenticated. Please log in first.');
       }
       
-      if (!response || !response.ok) {
-        throw new Error(`Could not find staff.json in any location`);
-      }
+      // Use the proper API service to fetch users from MongoDB
+      const response = await apiService.getUsers();
+      console.log('✅ Raw API response:', response);
       
-      const rawText = await response.text();
-      const facultyData = JSON.parse(rawText);
-      console.log('✅ Successfully parsed JSON, faculty count:', facultyData.length);
+      // Extract users array from API response
+      const facultyData = response.users || response;
       
       if (!Array.isArray(facultyData) || facultyData.length === 0) {
-        throw new Error('Faculty data is not a valid array');
+        throw new Error('No faculty data available from server');
       }
       
-      const transformedFaculty = facultyData.map((faculty) => ({
-        _id: faculty.t_id,
-        name: faculty.t_name,
-        email: faculty.email || 'No email provided',
-        role: 'faculty',
-        department: faculty.dep || 'Unknown Department',
-        designation: faculty.design || 'Faculty',
-        specialization: faculty.spec || 'General',
-        image: faculty.img_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(faculty.t_name)}&background=3b82f6&color=ffffff`,
-        username: faculty.username,
-        experience: faculty.exp || 'Not specified',
-        linkedIn: faculty.linked_in_id
-      })).filter(f => f._id && f.name);
+      console.log('📊 Total users from API:', facultyData.length);
+      
+      // Transform and validate faculty data - filter out admin/hod users, keep only staff
+      console.log('🔍 User roles found:', facultyData.map(u => u.role));
+      
+      const facultyUsers = facultyData.filter(user => user.role === 'faculty' || user.role === 'staff');
+      console.log('👥 Faculty users after filtering:', facultyUsers.length);
+      
+      const transformedFaculty = facultyUsers
+        .map(faculty => ({
+          _id: faculty._id || faculty.id || `temp_${Date.now()}_${Math.random()}`,
+          name: faculty.name || faculty.fullName || faculty.username || 'Unknown Name',
+          email: faculty.email || 'No email provided',
+          role: faculty.role || 'faculty',
+          department: faculty.department || faculty.dept || 'Unknown Department',
+          designation: faculty.designation || faculty.position || 'Faculty',
+          specialization: faculty.specialization || faculty.spec || 'General',
+          image: faculty.imageUrl || faculty.img || faculty.avatar || faculty.photo || faculty.profilePicture || 
+                 `https://ui-avatars.com/api/?name=${encodeURIComponent(faculty.name || faculty.username)}&background=3b82f6&color=ffffff`,
+          username: faculty.username,
+          experience: faculty.experience || faculty.exp || 'Not specified',
+          linkedIn: faculty.linkedIn || faculty.linked_in_id
+        }))
+        .filter(f => f._id && f.name);
       
       setStaffList(transformedFaculty);
-      console.log('✅ Faculty loaded successfully:', transformedFaculty.length, 'members');
+      console.log('✅ Faculty loaded successfully from MongoDB:', transformedFaculty.length, 'members');
+      
+      if (transformedFaculty.length === 0) {
+        toast.warn('No faculty members found in the system');
+      }
       
     } catch (error) {
-      console.error('❌ Faculty loading error:', error.message);
+      console.error('❌ Faculty loading error from MongoDB:', error.message);
       
-      // No fallback - show empty list on error
+      // Show specific error message
+      const errorMsg = error.message.includes('fetch') 
+        ? 'Unable to connect to server. Please check your internet connection.' 
+        : `Server error: ${error.message}`;
+        
       setStaffList([]);
-      toast.error(`Failed to load faculty: ${error.message}. Please try refreshing the page.`);
+      toast.error(`Failed to load faculty: ${errorMsg}`);
     } finally {
       setLoadingStaff(false);
     }
@@ -183,7 +192,7 @@ const testNotificationSystem = () => {
 
   // Load faculty when component mounts
   useEffect(() => {
-    loadFacultyFromJSON();
+    loadFacultyFromAPI();
   }, []);
 
   const toggleStaffSelection = (staff) => {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Dashboard,Login,Cal,TaskAllocate,TaskPortal,Profile,ProfileHod , Home ,ToDoList ,HodDash ,HodHome, FacultyOverview , TaskApproval, AllTasks, StaffOverdue, HodOverdue} from '../pages'
+import { Dashboard,Login,TaskAllocate,TaskPortal,Profile,ProfileHod , Home ,ToDoList ,HodDash ,HodHome, FacultyOverview , TaskApproval, AllTasks, StaffOverdue, HodOverdue} from '../pages'
 import { Route,Routes } from "react-router-dom"
 import { useState } from 'react'
 import { Card } from '../pages/Card'
@@ -17,7 +17,6 @@ export const AllRoutes = () => {
         
         <Route path='/dashboard' element={<Dashboard />}>
           <Route index element={<Home />} />
-          <Route path='cal' element={<Cal />} />
           <Route path='todo' element={<ToDoList/>} />
           <Route path='overdue' element={<StaffOverdue/>} />
           <Route path='portal' element={<TaskPortal />} />

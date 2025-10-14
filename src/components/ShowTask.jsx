@@ -1,3 +1,5 @@
+import React from 'react';
+
 export const ShowTask = ({ tasks, setTasks, task, setTask }) => {
   const handleedit = (id) => {
     const t = tasks.find((todo) => todo.id === id);
@@ -9,117 +11,157 @@ export const ShowTask = ({ tasks, setTasks, task, setTask }) => {
     setTasks(updatedTask);
   };
 
-  // Helper to check if a task is overdue, due today, or upcoming
+  const handlecomplete = (id) => {
+    const updatedTasks = tasks.map((todo) =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+    setTasks(updatedTasks);
+  };
+
+  // Helper to check if a todo is overdue, due today, or upcoming
   const getDueStatus = (due) => {
     if (!due) return "";
     const today = new Date();
     const dueDate = new Date(due);
-    if (
-      dueDate.getFullYear() === today.getFullYear() &&
-      dueDate.getMonth() === today.getMonth() &&
-      dueDate.getDate() === today.getDate()
-    ) {
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    if (dueDate.getTime() === today.getTime()) {
       return "today";
     }
-    if (dueDate < today.setHours(0, 0, 0, 0)) {
+    if (dueDate < today) {
       return "overdue";
     }
     return "upcoming";
   };
 
   return (
-    <section className="bg-white dark:bg-gray-800 max-w-[900px] w-full mx-auto mt-6 p-10 shadow-2xl rounded-3xl flex flex-col items-center border border-gray-200 dark:border-gray-700">
-      <div className="flex justify-between items-center w-full mb-6">
-        <div className="flex items-center text-2xl font-semibold">
-          <span className="text-green-700 dark:text-green-400">Todo List</span>
-          <span className="bg-green-600 dark:bg-green-700 dark:text-gray-200 text-white ml-4 px-3 py-1 rounded-full text-sm shadow">
-            {tasks.length}
+    <div className="h-full flex flex-col">
+      {/* Header with task count and clear button */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center">
+          <span className="text-lg font-medium text-gray-700 dark:text-gray-300">
+            {tasks.length === 0 ? 'No todos yet' : `${tasks.length} ${tasks.length === 1 ? 'todo' : 'todos'}`}
           </span>
         </div>
-        <button
-          onClick={() => setTasks([])}
-          className="ml-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition dark:from-blue-700 dark:to-blue-600 dark:hover:from-blue-800 dark:hover:to-blue-700"
-        >
-          Clear All
-        </button>
+        {tasks.length > 0 && (
+          <button
+            onClick={() => setTasks([])}
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all duration-200 transform hover:scale-105"
+          >
+            Clear All
+          </button>
+        )}
       </div>
 
-      <ul className="flex flex-col gap-4 mt-2 w-full">
-        {tasks.length === 0 && (
-          <li className="text-center text-gray-500 dark:text-gray-400 text-lg py-10">
-            No tasks yet. Add your first task!
-          </li>
-        )}
-        {tasks.map((task) => {
-          const dueStatus = getDueStatus(task.due);
-          return (
-            <li key={task.id} className="w-full">
-              <div
-                className={`w-full p-5 rounded-xl shadow flex flex-col md:flex-row md:items-center md:justify-between border transition
-                  ${
-                    dueStatus === "overdue"
-                      ? "bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-700/50"
+      {/* Task List with proper scrolling */}
+      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        {tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-4">
+              <i className="bi bi-list-task text-3xl text-gray-500 dark:text-gray-400"></i>
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">No todos yet</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">Add your first todo to get started!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {tasks.map((todo) => {
+              const dueStatus = getDueStatus(todo.due);
+              return (
+                <div
+                  key={todo.id}
+                  className={`p-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border-l-4 ${
+                    todo.completed
+                      ? "bg-green-50 border-l-green-500 dark:bg-green-900/20 dark:border-l-green-400 opacity-75"
+                      : dueStatus === "overdue"
+                      ? "bg-red-50 border-l-red-500 dark:bg-red-900/20 dark:border-l-red-400"
                       : dueStatus === "today"
-                      ? "bg-yellow-50 border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-700/50"
-                      : "bg-gray-50 border-gray-200 dark:bg-gray-900/50 dark:border-gray-700"
-                  }
-                `}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                      {task.name}
-                    </span>
-                    {dueStatus === "overdue" && (
-                      <span className="ml-2 bg-red-200 text-red-800 dark:bg-red-900/70 dark:text-red-200 px-2 py-0.5 rounded-full text-xs font-bold">
-                        Overdue
-                      </span>
-                    )}
-                    {dueStatus === "today" && (
-                      <span className="ml-2 bg-yellow-200 text-yellow-800 dark:bg-yellow-900/70 dark:text-yellow-200 px-2 py-0.5 rounded-full text-xs font-bold">
-                        Due Today
-                      </span>
-                    )}
-                    {dueStatus === "upcoming" && (
-                      <span className="ml-2 bg-green-200 text-green-800 dark:bg-green-900/70 dark:text-green-200 px-2 py-0.5 rounded-full text-xs font-bold">
-                        Upcoming
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-4 items-center text-sm text-gray-600 dark:text-gray-400">
-                    <span>
-                      <i className="bi bi-calendar-event mr-1"></i>
-                      Created: {task.date}
-                    </span>
-                    {task.due && (
-                      <span>
-                        <i className="bi bi-clock-history mr-1"></i>
-                        Due: {new Date(task.due).toLocaleDateString()}
-                      </span>
-                    )}
+                      ? "bg-yellow-50 border-l-yellow-500 dark:bg-yellow-900/20 dark:border-l-yellow-400"
+                      : "bg-white border-l-indigo-500 dark:bg-gray-700 dark:border-l-indigo-400"
+                  } hover:transform hover:scale-[1.02]`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {/* Completion checkbox */}
+                      <button
+                        onClick={() => handlecomplete(todo.id)}
+                        className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                          todo.completed
+                            ? "bg-green-500 border-green-500 text-white"
+                            : "border-gray-300 dark:border-gray-600 hover:border-green-400"
+                        }`}
+                      >
+                        {todo.completed && <i className="bi bi-check text-xs font-bold"></i>}
+                      </button>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className={`text-lg font-semibold truncate ${
+                            todo.completed 
+                              ? "line-through text-gray-500 dark:text-gray-400" 
+                              : "text-gray-800 dark:text-gray-100"
+                          }`}>
+                            {todo.name}
+                          </h3>
+                          {todo.completed && (
+                            <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                              Completed
+                            </span>
+                          )}
+                          {!todo.completed && dueStatus === "overdue" && (
+                            <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                              Overdue
+                            </span>
+                          )}
+                          {!todo.completed && dueStatus === "today" && (
+                            <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                              Due Today
+                            </span>
+                          )}
+                          {!todo.completed && dueStatus === "upcoming" && (
+                            <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                              Upcoming
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+                          <span className="flex items-center">
+                            <i className="bi bi-calendar-plus mr-1"></i>
+                            Created: {todo.date}
+                          </span>
+                          {todo.due && (
+                            <span className="flex items-center">
+                              <i className="bi bi-calendar-check mr-1"></i>
+                              Due: {new Date(todo.due).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handleedit(todo.id)}
+                        className="text-blue-600 hover:text-blue-800 bg-blue-100 hover:bg-blue-200 dark:text-blue-400 dark:hover:text-blue-300 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 rounded-lg p-2 transition-all duration-200 transform hover:scale-110"
+                        title="Edit Todo"
+                      >
+                        <i className="bi bi-pencil-square text-sm"></i>
+                      </button>
+                      <button
+                        onClick={() => handledelete(todo.id)}
+                        className="text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 dark:text-red-400 dark:hover:text-red-300 dark:bg-red-900/30 dark:hover:bg-red-800/40 rounded-lg p-2 transition-all duration-200 transform hover:scale-110"
+                        title="Delete Todo"
+                      >
+                        <i className="bi bi-trash text-sm"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 text-xl mt-4 md:mt-0">
-                  <button
-                    onClick={() => handleedit(task.id)}
-                    className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:bg-gray-900/50 dark:hover:bg-gray-700/60 rounded-full p-2 transition"
-                    title="Edit"
-                  >
-                    <i className="bi bi-pencil-square"></i>
-                  </button>
-                  <button
-                    onClick={() => handledelete(task.id)}
-                    className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:bg-gray-900/50 dark:hover:bg-gray-700/60 rounded-full p-2 transition"
-                    title="Delete"
-                  >
-                    <i className="bi bi-trash"></i>
-                  </button>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
