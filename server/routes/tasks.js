@@ -185,6 +185,155 @@ router.get('/analytics/historical-overdue', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/tasks/analytics/all-staff-performance
+// @desc    Get performance analytics for all staff members
+// @access  Private (HOD only)
+router.get('/analytics/all-staff-performance', auth, async (req, res) => {
+  try {
+    // Check if user is HOD
+    if (req.user.role !== 'hod') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. HOD role required.'
+      });
+    }
+
+    console.log('📊 Fetching all staff performance analytics...');
+
+    // Get all faculty users
+    const facultyUsers = await User.find({ role: 'faculty' })
+      .select('name email department designation')
+      .sort({ name: 1 });
+
+    if (!facultyUsers || facultyUsers.length === 0) {
+      return res.json({
+        success: true,
+        staff: [],
+        summary: {
+          totalStaff: 0,
+          averageCompletionRate: 0,
+          totalTasks: 0,
+          totalCompletedTasks: 0
+        }
+      });
+    }
+
+    // Get performance data for each staff member
+    const staffPerformance = await Promise.all(
+      facultyUsers.map(async (user) => {
+        const taskStats = await Task.aggregate([
+          { $match: { assignedTo: user._id } },
+          {
+            $group: {
+              _id: null,
+              totalTasks: { $sum: 1 },
+              completedTasks: {
+                $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+              },
+              overdueTasks: {
+                $sum: { $cond: [{ $eq: ["$status", "overdue"] }, 1, 0] }
+              },
+              pendingTasks: {
+                $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] }
+              },
+              inProgressTasks: {
+                $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] }
+              },
+              averageHodRating: {
+                $avg: { $cond: [{ $ne: ["$hodRating", null] }, "$hodRating", null] }
+              },
+              averageSubmissionRating: {
+                $avg: { $cond: [{ $ne: ["$submissionRating", null] }, "$submissionRating", null] }
+              },
+              averagePerformanceScore: {
+                $avg: { $cond: [{ $ne: ["$performanceScore", null] }, "$performanceScore", null] }
+              }
+            }
+          }
+        ]);
+
+        const stats = taskStats[0] || {
+          totalTasks: 0,
+          completedTasks: 0,
+          overdueTasks: 0,
+          pendingTasks: 0,
+          inProgressTasks: 0,
+          averageHodRating: 0,
+          averageSubmissionRating: 0,
+          averagePerformanceScore: 0
+        };
+
+        // Calculate completion rate
+        const completionRate = stats.totalTasks > 0 
+          ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
+          : 0;
+
+        // Calculate performance grade
+        let performanceGrade = 'C';
+        if (completionRate >= 90) performanceGrade = 'A+';
+        else if (completionRate >= 80) performanceGrade = 'A';
+        else if (completionRate >= 70) performanceGrade = 'B+';
+        else if (completionRate >= 60) performanceGrade = 'B';
+        else if (completionRate >= 50) performanceGrade = 'C+';
+
+        return {
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            department: user.department,
+            designation: user.designation
+          },
+          stats: {
+            ...stats,
+            completionRate,
+            performanceGrade,
+            averageHodRating: Math.round((stats.averageHodRating || 0) * 100) / 100,
+            averageSubmissionRating: Math.round((stats.averageSubmissionRating || 0) * 100) / 100,
+            averagePerformanceScore: Math.round((stats.averagePerformanceScore || 0) * 100) / 100
+          }
+        };
+      })
+    );
+
+    // Calculate summary statistics
+    const totalTasks = staffPerformance.reduce((sum, staff) => sum + staff.stats.totalTasks, 0);
+    const totalCompletedTasks = staffPerformance.reduce((sum, staff) => sum + staff.stats.completedTasks, 0);
+    const averageCompletionRate = staffPerformance.length > 0
+      ? Math.round(staffPerformance.reduce((sum, staff) => sum + staff.stats.completionRate, 0) / staffPerformance.length)
+      : 0;
+
+    // Sort by completion rate (descending) for ranking
+    const rankedStaff = staffPerformance
+      .sort((a, b) => b.stats.completionRate - a.stats.completionRate)
+      .map((staff, index) => ({
+        ...staff,
+        rank: index + 1
+      }));
+
+    res.json({
+      success: true,
+      staff: rankedStaff,
+      summary: {
+        totalStaff: facultyUsers.length,
+        averageCompletionRate,
+        totalTasks,
+        totalCompletedTasks,
+        topPerformer: rankedStaff[0] || null,
+        mostOverdue: rankedStaff.sort((a, b) => b.stats.overdueTasks - a.stats.overdueTasks)[0] || null
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ All staff performance analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch staff performance analytics',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/tasks/staff/:staffId/statistics
 // @desc    Get detailed performance statistics for a staff member
 // @access  Private (HOD or self)
@@ -703,155 +852,6 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete task',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/tasks/analytics/all-staff-performance
-// @desc    Get performance analytics for all staff members
-// @access  Private (HOD only)
-router.get('/analytics/all-staff-performance', auth, async (req, res) => {
-  try {
-    // Check if user is HOD
-    if (req.user.role !== 'hod') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. HOD role required.'
-      });
-    }
-
-    console.log('📊 Fetching all staff performance analytics...');
-
-    // Get all faculty users
-    const facultyUsers = await User.find({ role: 'faculty' })
-      .select('name email department designation')
-      .sort({ name: 1 });
-
-    if (!facultyUsers || facultyUsers.length === 0) {
-      return res.json({
-        success: true,
-        staff: [],
-        summary: {
-          totalStaff: 0,
-          averageCompletionRate: 0,
-          totalTasks: 0,
-          totalCompletedTasks: 0
-        }
-      });
-    }
-
-    // Get performance data for each staff member
-    const staffPerformance = await Promise.all(
-      facultyUsers.map(async (user) => {
-        const taskStats = await Task.aggregate([
-          { $match: { assignedTo: user._id } },
-          {
-            $group: {
-              _id: null,
-              totalTasks: { $sum: 1 },
-              completedTasks: {
-                $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
-              },
-              overdueTasks: {
-                $sum: { $cond: [{ $eq: ["$status", "overdue"] }, 1, 0] }
-              },
-              pendingTasks: {
-                $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] }
-              },
-              inProgressTasks: {
-                $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] }
-              },
-              averageHodRating: {
-                $avg: { $cond: [{ $ne: ["$hodRating", null] }, "$hodRating", null] }
-              },
-              averageSubmissionRating: {
-                $avg: { $cond: [{ $ne: ["$submissionRating", null] }, "$submissionRating", null] }
-              },
-              averagePerformanceScore: {
-                $avg: { $cond: [{ $ne: ["$performanceScore", null] }, "$performanceScore", null] }
-              }
-            }
-          }
-        ]);
-
-        const stats = taskStats[0] || {
-          totalTasks: 0,
-          completedTasks: 0,
-          overdueTasks: 0,
-          pendingTasks: 0,
-          inProgressTasks: 0,
-          averageHodRating: 0,
-          averageSubmissionRating: 0,
-          averagePerformanceScore: 0
-        };
-
-        // Calculate completion rate
-        const completionRate = stats.totalTasks > 0 
-          ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
-          : 0;
-
-        // Calculate performance grade
-        let performanceGrade = 'C';
-        if (completionRate >= 90) performanceGrade = 'A+';
-        else if (completionRate >= 80) performanceGrade = 'A';
-        else if (completionRate >= 70) performanceGrade = 'B+';
-        else if (completionRate >= 60) performanceGrade = 'B';
-        else if (completionRate >= 50) performanceGrade = 'C+';
-
-        return {
-          user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            department: user.department,
-            designation: user.designation
-          },
-          stats: {
-            ...stats,
-            completionRate,
-            performanceGrade,
-            averageHodRating: Math.round((stats.averageHodRating || 0) * 100) / 100,
-            averageSubmissionRating: Math.round((stats.averageSubmissionRating || 0) * 100) / 100,
-            averagePerformanceScore: Math.round((stats.averagePerformanceScore || 0) * 100) / 100
-          }
-        };
-      })
-    );
-
-    // Calculate summary statistics
-    const totalTasks = staffPerformance.reduce((sum, staff) => sum + staff.stats.totalTasks, 0);
-    const totalCompletedTasks = staffPerformance.reduce((sum, staff) => sum + staff.stats.completedTasks, 0);
-    const averageCompletionRate = staffPerformance.length > 0
-      ? Math.round(staffPerformance.reduce((sum, staff) => sum + staff.stats.completionRate, 0) / staffPerformance.length)
-      : 0;
-
-    // Sort by completion rate (descending) for ranking
-    const rankedStaff = staffPerformance
-      .sort((a, b) => b.stats.completionRate - a.stats.completionRate)
-      .map((staff, index) => ({
-        ...staff,
-        rank: index + 1
-      }));
-
-    res.json({
-      success: true,
-      staff: rankedStaff,
-      summary: {
-        totalStaff: facultyUsers.length,
-        averageCompletionRate,
-        totalTasks,
-        totalCompletedTasks,
-        topPerformer: rankedStaff[0] || null,
-        mostOverdue: rankedStaff.sort((a, b) => b.stats.overdueTasks - a.stats.overdueTasks)[0] || null
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ All staff performance analytics error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch staff performance analytics',
       error: error.message
     });
   }

@@ -393,12 +393,12 @@ const assignTask = async () => {
     // ✅ SHOW RESULTS TO USER
     if (successfulAssignments > 0) {
       toast.success(
-        `✅ Task "${taskTitle}" successfully assigned to ${successfulAssignments} faculty member(s)!`
+        `Task "${taskTitle}" successfully assigned to ${successfulAssignments} faculty member(s)!`
       );
       resetForm();
     } else {
       toast.error(
-        `❌ Failed to assign task to any faculty members. 
+        `Failed to assign task to any faculty members. 
         Check console for details.`
       );
     }

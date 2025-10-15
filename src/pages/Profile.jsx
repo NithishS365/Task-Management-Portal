@@ -233,9 +233,7 @@ export const Profile = () => {
           >
             Change Password
           </button>
-          <button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 dark:from-blue-700 dark:to-cyan-600 dark:hover:from-blue-800 dark:hover:to-cyan-700 text-white text-sm px-8 py-3 rounded-lg shadow font-semibold transition">
-            Edit Profile
-          </button>
+          
         </div>
       </div>
 

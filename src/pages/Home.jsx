@@ -37,21 +37,17 @@ export function Home() {
     });
     const [taskData, setTaskData] = useState([]);
     const [taskCategories, setTaskCategories] = useState([]);
-    // ✅ NEW: Add view mode state
-    const [viewMode, setViewMode] = useState('days'); // 'days' or 'months'
-
+    const [viewMode, setViewMode] = useState('days'); 
     const myView = { calendar: { labels: true } };
 
     const handleToastClose = () => {
         setToastOpen(false);
     };
-
     const handleEventClick = (args) => {
         setToastText(args.event.title);
         setToastOpen(true);
     };
 
-    // Calculate task statistics from actual data
     useEffect(() => {
         if (tasks && tasks.length > 0) {
             // Filter tasks for current user

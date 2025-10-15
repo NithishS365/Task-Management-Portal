@@ -25,42 +25,137 @@ export const StaffAnalytics = () => {
       setLoading(true);
       console.log('🔄 Loading staff analytics...');
       
-      const response = await apiService.getAllStaffPerformance();
-      console.log('✅ Staff analytics response:', response);
+      // Get users and tasks separately since the analytics endpoint is not working
+      const [usersResponse, tasksResponse] = await Promise.all([
+        apiService.getUsers(),
+        apiService.getTasks()
+      ]);
       
-      if (response.success) {
-        const { staff, summary } = response;
-        
-        setStaffData(staff);
-        setSummaryStats(summary);
-        
-        // Prepare top performers (top 5)
-        const topFive = staff.slice(0, 5);
-        setTopPerformers(topFive);
-        
-        // Prepare most overdue staff (top 5 with highest overdue tasks)
-        const overdueStaff = [...staff]
-          .sort((a, b) => b.stats.overdueTasks - a.stats.overdueTasks)
-          .slice(0, 5)
-          .filter(s => s.stats.overdueTasks > 0);
-        setMostOverdue(overdueStaff);
-        
-        // Prepare chart data
-        const chartDataFormatted = staff.map(s => ({
-          name: s.user.name.split(' ').slice(-1)[0], 
-          completionRate: s.stats.completionRate,
-          totalTasks: s.stats.totalTasks,
-          completedTasks: s.stats.completedTasks,
-          overdueTasks: s.stats.overdueTasks,
-          performanceScore: s.stats.averagePerformanceScore || 0,
-          fullName: s.user.name
-        }));
-        setChartData(chartDataFormatted);
-        
-        toast.success(`Loaded analytics for ${staff.length} staff members`);
-      } else {
-        throw new Error(response.message || 'Failed to load staff analytics');
+      console.log('✅ Users response:', usersResponse);
+      console.log('✅ Tasks response:', tasksResponse);
+      
+      if (!usersResponse.success || !tasksResponse.success) {
+        throw new Error('Failed to load data from server');
       }
+      
+      const allUsers = usersResponse.users || [];
+      const allTasks = tasksResponse.tasks || [];
+      
+      // Filter only faculty users
+      const facultyUsers = allUsers.filter(user => user.role === 'faculty');
+      
+      if (facultyUsers.length === 0) {
+        setSummaryStats({
+          totalStaff: 0,
+          averageCompletionRate: 0,
+          totalTasks: 0,
+          totalCompletedTasks: 0
+        });
+        setStaffData([]);
+        return;
+      }
+      
+      // Calculate analytics for each faculty member
+      const staffPerformance = facultyUsers.map(user => {
+        // Get tasks assigned to this user
+        const userTasks = allTasks.filter(task => 
+          task.assignedTo?._id === user._id || 
+          task.assignedTo?.id === user._id ||
+          task.assignedTo === user._id
+        );
+        
+        const totalTasks = userTasks.length;
+        const completedTasks = userTasks.filter(task => task.status === 'completed').length;
+        const overdueTasks = userTasks.filter(task => task.status === 'overdue').length;
+        const pendingTasks = userTasks.filter(task => task.status === 'pending').length;
+        const inProgressTasks = userTasks.filter(task => task.status === 'in-progress').length;
+        
+        const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        
+        // Calculate performance grade
+        let performanceGrade = 'C';
+        if (completionRate >= 90) performanceGrade = 'A+';
+        else if (completionRate >= 80) performanceGrade = 'A';
+        else if (completionRate >= 70) performanceGrade = 'B+';
+        else if (completionRate >= 60) performanceGrade = 'B';
+        else if (completionRate >= 50) performanceGrade = 'C+';
+        
+        return {
+          user: {
+            _id: user._id || user.id,
+            name: user.name,
+            email: user.email,
+            image: user.imageUrl,
+            department: user.department,
+            designation: user.designation || 'Faculty'
+          },
+          stats: {
+            totalTasks,
+            completedTasks,
+            overdueTasks,
+            pendingTasks,
+            inProgressTasks,
+            completionRate,
+            performanceGrade,
+            averageHodRating: 0,
+            averageSubmissionRating: 0,
+            averagePerformanceScore: 0
+          }
+        };
+      });
+      
+      // Sort by completion rate (descending) for ranking
+      const rankedStaff = staffPerformance
+        .sort((a, b) => b.stats.completionRate - a.stats.completionRate)
+        .map((staff, index) => ({
+          ...staff,
+          rank: index + 1
+        }));
+      
+      // Calculate summary statistics
+      const totalTasks = rankedStaff.reduce((sum, staff) => sum + staff.stats.totalTasks, 0);
+      const totalCompletedTasks = rankedStaff.reduce((sum, staff) => sum + staff.stats.completedTasks, 0);
+      const averageCompletionRate = rankedStaff.length > 0
+        ? Math.round(rankedStaff.reduce((sum, staff) => sum + staff.stats.completionRate, 0) / rankedStaff.length)
+        : 0;
+      
+      const summary = {
+        totalStaff: facultyUsers.length,
+        averageCompletionRate,
+        totalTasks,
+        totalCompletedTasks,
+        topPerformer: rankedStaff[0] || null,
+        mostOverdue: rankedStaff.find(s => s.stats.overdueTasks > 0) || null
+      };
+      
+      setStaffData(rankedStaff);
+      setSummaryStats(summary);
+      
+      // Prepare top performers (top 5)
+      const topFive = rankedStaff.slice(0, 5);
+      setTopPerformers(topFive);
+      
+      // Prepare most overdue staff (top 5 with highest overdue tasks)
+      const overdueStaff = rankedStaff
+        .filter(s => s.stats.overdueTasks > 0)
+        .sort((a, b) => b.stats.overdueTasks - a.stats.overdueTasks)
+        .slice(0, 5);
+      setMostOverdue(overdueStaff);
+      
+      // Prepare chart data
+      const chartDataFormatted = rankedStaff.map(s => ({
+        name: s.user.name.split(' ').slice(-1)[0], // Last name only for better display
+        completionRate: s.stats.completionRate,
+        totalTasks: s.stats.totalTasks,
+        completedTasks: s.stats.completedTasks,
+        overdueTasks: s.stats.overdueTasks,
+        performanceScore: s.stats.averagePerformanceScore || 0,
+        fullName: s.user.name
+      }));
+      setChartData(chartDataFormatted);
+      
+      toast.success(`Loaded analytics for ${rankedStaff.length} staff members`, { autoClose: 3000, position: "top-right" });
+      
     } catch (error) {
       console.error('❌ Error loading staff analytics:', error);
       toast.error(`Failed to load staff analytics: ${error.message}`);
@@ -115,6 +210,7 @@ export const StaffAnalytics = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+  
         <Header />
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center">
@@ -361,93 +457,115 @@ export const StaffAnalytics = () => {
           </div>
         </div>
 
-        {/* Detailed Staff Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Detailed Staff Performance
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Staff Member
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Total Tasks
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Completed
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Overdue
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Completion Rate
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Grade
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {staffData.map((staff, index) => (
-                  <tr key={staff.user._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      <span className="flex items-center justify-center w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-semibold">
-                        {staff.rank}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {staff.user.name}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {staff.user.email}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {staff.stats.totalTasks}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400">
-                      {staff.stats.completedTasks}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">
-                      {staff.stats.overdueTasks}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
-                          <div 
-                            className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
-                            style={{ width: `${staff.stats.completionRate}%` }}
-                          ></div>
-                        </div>
-                        <span className={`text-sm font-medium ${getPerformanceColor(staff.stats.completionRate)}`}>
-                          {staff.stats.completionRate}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGradeBadgeColor(staff.stats.performanceGrade)}`}>
-                        {staff.stats.performanceGrade}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        {/* Refresh Button */}
+          <div className="bg-white  dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Detailed Staff Performance
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Rank
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Profile
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Staff Member
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Total Tasks
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Completed
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Overdue
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Completion Rate
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Grade
+              </th>
+            </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {staffData.map((staff, index) => (
+              <tr key={staff.user._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  <span className="flex items-center justify-center w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-semibold">
+              {staff.rank}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {staff.user.image ? (
+              <img 
+                src={staff.user.image} 
+                alt={staff.user.name} 
+                className="w-10 h-10 rounded-full object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+                  ) : null}
+                  <div 
+              className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+              style={{ display: staff.user.image ? 'none' : 'flex' }}
+                  >
+              {staff.user.name.charAt(0).toUpperCase()}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {staff.user.name}
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {staff.user.email}
+              </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  {staff.stats.totalTasks}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400">
+                  {staff.stats.completedTasks}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">
+                  {staff.stats.overdueTasks}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+              <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
+                <div 
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${staff.stats.completionRate}%` }}
+                ></div>
+              </div>
+              <span className={`text-sm font-medium ${getPerformanceColor(staff.stats.completionRate)}`}>
+                {staff.stats.completionRate}%
+              </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGradeBadgeColor(staff.stats.performanceGrade)}`}>
+              {staff.stats.performanceGrade}
+                  </span>
+                </td>
+              </tr>
+            ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Refresh Button */}
         <div className="mt-8 text-center">
           <button
             onClick={loadStaffAnalytics}

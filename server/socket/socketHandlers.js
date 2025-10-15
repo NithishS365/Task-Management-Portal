@@ -1,12 +1,12 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import Notification from '../models/Notification.js'; // ✅ ADD THIS
+import Notification from '../models/Notification.js'; 
 
 let io;
 const connectedUsers = new Map();
 
-// ✅ HELPER FUNCTION TO CREATE AND SAVE NOTIFICATION
+
 export const createNotification = async (userId, notificationData) => {
   try {
     const notification = new Notification({
