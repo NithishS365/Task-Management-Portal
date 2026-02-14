@@ -652,81 +652,122 @@ export const HodOverdue = () => {
         throw new Error('No authentication token found');
       }
 
-      console.log('📊 Fetching historical overdue analytics data...');
-      const response = await fetch('http://localhost:5000/api/tasks/analytics/historical-overdue', {
+      console.log('🔄 Starting tracked analytics fetch...');
+      
+      // Step 1: Trigger overdue marking first
+      console.log('📝 Triggering overdue task marking...');
+      const markResponse = await fetch('http://localhost:5000/api/tasks/mark-overdue', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (markResponse.ok) {
+        const markResult = await markResponse.json();
+        console.log('✅ Overdue marking result:', markResult);
+      } else {
+        console.warn('⚠️ Overdue marking failed:', markResponse.status);
+      }
+
+      // Step 2: Get tracked analytics with permanent flags
+      console.log('📊 Fetching tracked analytics...');
+      const response = await fetch('http://localhost:5000/api/tasks/tracked-analytics', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('📊 Historical overdue analytics API response status:', response.status);
+      console.log('📊 Tracked analytics API response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Historical overdue analytics data received:', data);
+        console.log('✅ Tracked analytics data received:', data);
+        console.log('🔍 Raw response structure:', {
+          success: data.success,
+          hasAnalytics: !!data.analytics,
+          analyticsKeys: data.analytics ? Object.keys(data.analytics) : []
+        });
         
         if (data.success && data.analytics) {
+          const { analytics } = data;
+          
+          console.log('📈 Processing tracked analytics data:', {
+            overdueByStaffCount: analytics.overdueByStaff?.length,
+            overdueByPriorityCount: analytics.overdueByPriority?.length,
+            trendDataCount: analytics.overdueTrend?.length,
+            totalReallocated: analytics.totalReallocated,
+            avgOverdueDays: analytics.avgOverdueDays,
+            criticalOverdue: analytics.criticalOverdue
+          });
+          
+          // Calculate total overdue from staff data
+          const totalOverdue = (analytics.overdueByStaff || []).reduce((sum, item) => sum + item.count, 0);
+          
           setAnalytics({
-            // Current overdue metrics
-            totalOverdue: data.analytics.totalOverdue,
-            criticalOverdue: data.analytics.criticalOverdue,
-            
-            // Historical metrics
-            totalHistoricalOverdue: data.analytics.totalHistoricalOverdue,
-            resolvedOverdueCount: data.analytics.resolvedOverdueCount,
-            
-            // Staff analytics with historical data
-            overdueByStaff: data.analytics.overdueByStaff,
-            mostOverdueStaff: data.analytics.mostOverdueStaff,
-            
-            // Priority distribution with historical data
-            overduePercentages: data.analytics.overdueByPriority.map(item => ({
+            totalOverdue,
+            overdueByStaff: analytics.overdueByStaff || [],
+            overduePercentages: (analytics.overdueByPriority || []).map(item => ({
               name: item._id,
-              value: item.totalCount,
-              currentCount: item.currentCount,
-              resolvedCount: item.resolvedCount,
-              percentage: Math.round((item.totalCount / data.analytics.totalHistoricalOverdue) * 100) || 0
+              value: item.count,
+              percentage: Math.round((item.count / (totalOverdue || 1)) * 100) || 0
             })),
-            priorityDistribution: data.analytics.overdueByPriority.map(item => ({
+            trendData: analytics.overdueTrend || [],
+            priorityDistribution: (analytics.overdueByPriority || []).map(item => ({
               name: item._id,
-              value: item.totalCount,
-              currentCount: item.currentCount,
-              resolvedCount: item.resolvedCount,
-              color: item._id === 'High' ? '#EF4444' : 
-                     item._id === 'Medium' ? '#F59E0B' : '#10B981'
+              value: item.count,
+              color: item._id === 'high' ? '#EF4444' : 
+                     item._id === 'medium' ? '#F59E0B' : 
+                     item._id === 'low' ? '#10B981' :
+                     item._id === 'urgent' ? '#DC2626' : '#6B7280'
             })),
-            
-            // Category and department with historical data
-            categoryDistribution: data.analytics.overdueByCategory,
-            departmentDistribution: data.analytics.overdueByDepartment,
-            
-            // Trend with historical data
-            trendData: data.analytics.overdueTrend,
-            
-            // Summary with historical metrics
+            categoryDistribution: analytics.overdueByCategory || [],
+            departmentDistribution: analytics.overdueByDepartment || [],
+            mostOverdueStaff: analytics.mostOverdueStaff || [],
+            criticalOverdue: analytics.criticalOverdue || 0,
             summary: {
-              ...data.analytics.summary,
-              totalHistoricalOverdue: data.analytics.totalHistoricalOverdue,
-              resolvedOverdueCount: data.analytics.resolvedOverdueCount,
-              resolutionRate: data.analytics.summary.resolutionRate
+              totalTasks: totalOverdue,
+              totalReallocated: analytics.totalReallocated || 0,
+              overduePercentage: analytics.overduePercentage || 0,
+              averageDaysOverdue: analytics.avgOverdueDays || 0
             }
           });
+          console.log('✅ Tracked analytics state updated successfully');
+        } else {
+          console.warn('⚠️ Tracked analytics data structure is invalid:', {
+            success: data.success,
+            hasAnalytics: !!data.analytics,
+            responseData: data
+          });
+          throw new Error('Invalid tracked analytics data structure received');
         }
       } else {
         const errorData = await response.json();
-        console.error('❌ Overdue analytics API error:', errorData);
+        console.error('❌ Tracked analytics API error:', errorData);
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (err) {
-      console.error('❌ Error fetching analytics:', err);
-      setError(`Failed to load analytics data: ${err.message}`);
-      // Set empty analytics instead of mock data
+      console.error('❌ Error fetching tracked analytics:', err);
+      setError(`Failed to load tracked analytics data: ${err.message}`);
+      // Set empty analytics with proper structure
       setAnalytics({
         totalOverdue: 0,
         overdueByStaff: [],
+        overduePercentages: [],
         trendData: [],
-        priorityDistribution: []
+        priorityDistribution: [],
+        categoryDistribution: [],
+        departmentDistribution: [],
+        mostOverdueStaff: [],
+        criticalOverdue: 0,
+        summary: {
+          totalTasks: 0,
+          totalReallocated: 0,
+          overduePercentage: 0,
+          averageDaysOverdue: 0
+        }
       });
     } finally {
       setLoading(false);
@@ -980,10 +1021,10 @@ export const HodOverdue = () => {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-indigo-600 dark:text-white mb-2">
-            Historical Overdue Tasks Analytics
+            Overdue Tasks Management
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Comprehensive analysis of current and previously overdue tasks with extension request management
+            Monitor overdue tasks and manage extension requests
           </p>
         </div>
 
@@ -992,39 +1033,17 @@ export const HodOverdue = () => {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Analytics Overview</h2>
           
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <AnalyticsCard
-              title="Current Overdue"
+              title="Total Overdue Tasks"
               value={analytics.totalOverdue || 0}
-              subtitle={`${analytics.summary?.currentOverduePercentage || 0}% of all tasks`}
+              subtitle={analytics.summary?.overduePercentage ? `${analytics.summary.overduePercentage}% of all tasks` : 'No percentage data'}
               icon={
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               }
               color="red"
-            />
-            <AnalyticsCard
-              title="Historical Overdue"
-              value={analytics.totalHistoricalOverdue || 0}
-              subtitle={`${analytics.summary?.historicalOverduePercentage || 0}% total exposure`}
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0h2a2 2 0 002-2V7a2 2 0 00-2-2H9m0 0V3m0 0h2M9 3v2m3 6v3m0 0l-3-3m3 3l3-3"/>
-                </svg>
-              }
-              color="orange"
-            />
-            <AnalyticsCard
-              title="Resolved Overdue"
-              value={analytics.resolvedOverdueCount || 0}
-              subtitle={`${analytics.summary?.resolutionRate || 0}% resolution rate`}
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              }
-              color="green"
             />
             <AnalyticsCard
               title="Critical Overdue"
@@ -1038,9 +1057,20 @@ export const HodOverdue = () => {
               color="red"
             />
             <AnalyticsCard
+              title="Most Overdue Staff"
+              value={analytics.mostOverdueStaff?.[0]?.staffName?.split(' ')[0] || 'No Data'}
+              subtitle={analytics.mostOverdueStaff?.[0] ? `${analytics.mostOverdueStaff[0].overdueCount} overdue tasks` : 'No overdue staff'}
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              }
+              color="orange"
+            />
+            <AnalyticsCard
               title="Average Days Overdue"
               value={analytics.summary?.averageDaysOverdue || 0}
-              subtitle="Historical average"
+              subtitle="Across all overdue tasks"
               icon={
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -1054,140 +1084,100 @@ export const HodOverdue = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Overdue by Staff Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historical Overdue Tasks by Staff</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.overdueByStaff || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="staffName" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
-                  />
-                  <YAxis />
-                  <Tooltip formatter={(value, name) => {
-                    const labels = {
-                      'totalOverdueCount': 'Total Historical Overdue',
-                      'currentOverdueCount': 'Current Overdue',
-                      'resolvedOverdueCount': 'Resolved Overdue'
-                    };
-                    return [value, labels[name] || name];
-                  }} />
-                  <Legend />
-                  <Bar dataKey="totalOverdueCount" fill="#EF4444" name="Total Historical" />
-                  <Bar dataKey="currentOverdueCount" fill="#DC2626" name="Current Overdue" />
-                  <Bar dataKey="resolvedOverdueCount" fill="#10B981" name="Resolved" />
-                </BarChart>
-              </ResponsiveContainer>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overdue Tasks by Staff</h3>
+              {analytics.overdueByStaff && analytics.overdueByStaff.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={analytics.overdueByStaff}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="staffName" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                    />
+                    <YAxis />
+                    <Tooltip formatter={(value, name) => [value, name === 'overdueCount' ? 'Overdue Tasks' : name]} />
+                    <Legend />
+                    <Bar dataKey="overdueCount" fill="#EF4444" name="Overdue Tasks" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-72 text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">📊</div>
+                    <p className="text-lg font-medium">No overdue task data</p>
+                    <p className="text-sm">No staff members have overdue tasks</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Priority Distribution */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historical Overdue Tasks by Priority</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.priorityDistribution || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value, name) => {
-                    const labels = {
-                      'value': 'Total Historical',
-                      'currentCount': 'Current Overdue',
-                      'resolvedCount': 'Resolved Overdue'
-                    };
-                    return [value, labels[name] || name];
-                  }} />
-                  <Legend />
-                  <Bar dataKey="value" fill="#EF4444" name="Total Historical" />
-                  <Bar dataKey="currentCount" fill="#DC2626" name="Current Overdue" />
-                  <Bar dataKey="resolvedCount" fill="#10B981" name="Resolved" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Additional Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Category Distribution */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historical Overdue Tasks by Category</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.categoryDistribution || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="_id" />
-                  <YAxis />
-                  <Tooltip formatter={(value, name) => {
-                    const labels = {
-                      'totalCount': 'Total Historical',
-                      'currentCount': 'Current Overdue',
-                      'resolvedCount': 'Resolved Overdue'
-                    };
-                    return [value, labels[name] || name];
-                  }} />
-                  <Legend />
-                  <Bar dataKey="totalCount" fill="#F59E0B" name="Total Historical" />
-                  <Bar dataKey="currentCount" fill="#DC2626" name="Current Overdue" />
-                  <Bar dataKey="resolvedCount" fill="#10B981" name="Resolved" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Department Distribution */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historical Overdue Tasks by Department</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.departmentDistribution || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="_id" />
-                  <YAxis />
-                  <Tooltip formatter={(value, name) => {
-                    const labels = {
-                      'totalCount': 'Total Historical',
-                      'currentCount': 'Current Overdue',
-                      'resolvedCount': 'Resolved Overdue'
-                    };
-                    return [value, labels[name] || name];
-                  }} />
-                  <Legend />
-                  <Bar dataKey="totalCount" fill="#8B5CF6" name="Total Historical" />
-                  <Bar dataKey="currentCount" fill="#7C3AED" name="Current Overdue" />
-                  <Bar dataKey="resolvedCount" fill="#10B981" name="Resolved" />
-                </BarChart>
-              </ResponsiveContainer>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overdue Tasks by Priority</h3>
+              {analytics.priorityDistribution && analytics.priorityDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={analytics.priorityDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({name, value}) => `${name}: ${value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {analytics.priorityDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-72 text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">🎯</div>
+                    <p className="text-lg font-medium">No priority data</p>
+                    <p className="text-sm">No tasks with priority information</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Trend Chart */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historical Overdue Tasks Trend (Last 12 Months)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={analytics.trendData || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value, name) => {
-                  const labels = {
-                    'totalOverdueCount': 'Total Historical Overdue',
-                    'currentOverdueCount': 'Current Overdue',
-                    'resolvedOverdueCount': 'Resolved Overdue',
-                    'averageDaysOverdue': 'Avg Days Overdue'
-                  };
-                  return [value, labels[name] || name];
-                }} />
-                <Legend />
-                <Line type="monotone" dataKey="totalOverdueCount" stroke="#EF4444" strokeWidth={2} name="Total Historical" />
-                <Line type="monotone" dataKey="currentOverdueCount" stroke="#DC2626" strokeWidth={2} name="Current Overdue" />
-                <Line type="monotone" dataKey="resolvedOverdueCount" stroke="#10B981" strokeWidth={2} name="Resolved Overdue" />
-                <Line type="monotone" dataKey="averageDaysOverdue" stroke="#F59E0B" strokeWidth={2} name="Avg Days Overdue" />
-              </LineChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overdue Tasks Trend (Last 12 Months)</h3>
+            {analytics.trendData && analytics.trendData.some(item => item.overdueCount > 0) ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={analytics.trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value, name) => [value, name === 'overdueCount' ? 'Overdue Tasks' : 'Avg Days Overdue']} />
+                  <Legend />
+                  <Line type="monotone" dataKey="overdueCount" stroke="#EF4444" strokeWidth={2} name="Overdue Tasks" />
+                  <Line type="monotone" dataKey="averageDaysOverdue" stroke="#F59E0B" strokeWidth={2} name="Avg Days Overdue" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-72 text-gray-500 dark:text-gray-400">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📈</div>
+                  <p className="text-lg font-medium">No trend data</p>
+                  <p className="text-sm">No overdue tasks in the last 12 months</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Most Overdue Staff Details */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Historical Overdue Staff Performance</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Most Overdue Staff Details</h2>
           
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="overflow-x-auto">
@@ -1201,13 +1191,7 @@ export const HodOverdue = () => {
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Total Historical
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Current Overdue
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Resolved Overdue
+                      Overdue Tasks
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Avg Days Overdue
@@ -1216,7 +1200,7 @@ export const HodOverdue = () => {
                       Max Days Overdue
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Performance
+                      Status
                     </th>
                   </tr>
                 </thead>
@@ -1231,26 +1215,16 @@ export const HodOverdue = () => {
                           {staff.staffEmail}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                            {staff.totalOverdueCount || 0} total
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                            {staff.currentOverdueCount || 0} current
+                            {staff.overdueCount} tasks
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            {staff.resolvedOverdueCount || 0} resolved
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {Math.round(staff.averageDaysOverdue || 0)} days
+                          {Math.round(staff.averageDaysOverdue)} days
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           <span className="font-semibold text-red-600 dark:text-red-400">
-                            {staff.maxDaysOverdue || 0} days
+                            {staff.maxDaysOverdue} days
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1262,13 +1236,9 @@ export const HodOverdue = () => {
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
                               High Risk
                             </span>
-                          ) : staff.totalOverdueCount > 0 ? (
+                          ) : (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
                               Moderate
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                              Good
                             </span>
                           )}
                         </td>
@@ -1276,7 +1246,7 @@ export const HodOverdue = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                         <div className="text-4xl mb-4">✅</div>
                         <p className="text-lg font-medium">No overdue tasks found</p>
                         <p className="text-sm">All staff are up to date with their assignments</p>

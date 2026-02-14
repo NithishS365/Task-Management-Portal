@@ -1581,25 +1581,27 @@ app.get('/api/analytics/overdue-tasks', authMiddleware, async (req, res) => {
 
     console.log('✅ User verified as HOD, proceeding with analytics...');
 
+    // Get comprehensive analytics data for all overdue tasks
     const currentDate = new Date();
+    
+    // Get all overdue tasks (not completed/approved/rejected and past due date)
+    const overdueTasks = await Task.find({
+      dueDate: { $lt: currentDate },
+      status: { $nin: ['completed', 'ForApproval', 'rejected'] }
+    })
+    .populate('assignedTo', 'name email role department')
+    .populate('assignedBy', 'name email role department')
+    .sort({ dueDate: 1 });
 
-    // Get all staff under this HOD's department
-    const staffUsers = await User.find({ 
-      role: 'faculty',
-      // Assuming department field exists - adjust based on your schema
-      // department: req.user.department 
-    }).select('_id name email');
+    // Total overdue count
+    const totalOverdue = overdueTasks.length;
 
-    const staffIds = staffUsers.map(staff => staff._id);
-
-    // Aggregate overdue tasks
-    const overdueTasksAggregation = await Task.aggregate([
+    // Overdue tasks by staff with comprehensive data
+    const overdueByStaff = await Task.aggregate([
       {
         $match: {
-          assignedTo: { $in: staffIds },
-          assignedBy: hodId,
           dueDate: { $lt: currentDate },
-          status: { $nin: ['completed', 'submitted'] }
+          status: { $nin: ['completed', 'ForApproval', 'rejected'] }
         }
       },
       {
@@ -1607,106 +1609,283 @@ app.get('/api/analytics/overdue-tasks', authMiddleware, async (req, res) => {
           from: 'users',
           localField: 'assignedTo',
           foreignField: '_id',
-          as: 'staffInfo'
+          as: 'staff'
         }
       },
-      {
-        $unwind: '$staffInfo'
-      },
+      { $unwind: '$staff' },
       {
         $group: {
           _id: '$assignedTo',
-          staffName: { $first: '$staffInfo.name' },
-          staffEmail: { $first: '$staffInfo.email' },
+          staffName: { $first: '$staff.name' },
+          staffEmail: { $first: '$staff.email' },
           overdueCount: { $sum: 1 },
-          tasks: { $push: '$$ROOT' }
+          tasks: {
+            $push: {
+              id: '$_id',
+              title: '$title',
+              dueDate: '$dueDate',
+              priority: '$priority',
+              category: '$category',
+              daysOverdue: {
+                $ceil: {
+                  $divide: [
+                    { $subtract: [currentDate, '$dueDate'] },
+                    86400000
+                  ]
+                }
+              }
+            }
+          }
         }
+      },
+      {
+        $sort: { overdueCount: -1 }
       }
     ]);
 
-    // Get total tasks assigned by this HOD
-    const totalTasksAssigned = await Task.countDocuments({
-      assignedBy: hodId,
-      assignedTo: { $in: staffIds }
-    });
-
-    const totalOverdueTasks = overdueTasksAggregation.reduce((sum, staff) => sum + staff.overdueCount, 0);
-
-    // Calculate overdue percentage
-    const overduePercentage = totalTasksAssigned > 0 ? 
-      Math.round((totalOverdueTasks / totalTasksAssigned) * 100) : 0;
-
-    // Calculate priority distribution based on actual task priorities
-    const priorityAggregation = await Task.aggregate([
+    // Overdue tasks by priority
+    const overdueByPriority = await Task.aggregate([
       {
         $match: {
-          assignedTo: { $in: staffIds },
-          assignedBy: hodId,
           dueDate: { $lt: currentDate },
-          status: { $nin: ['completed', 'submitted'] }
+          status: { $nin: ['completed', 'ForApproval', 'rejected'] }
         }
       },
       {
         $group: {
           _id: '$priority',
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Monthly overdue trend (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+    const overdueTrend = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $gte: twelveMonthsAgo, $lt: currentDate },
+          status: { $nin: ['completed', 'ForApproval', 'rejected'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$dueDate' },
+            month: { $month: '$dueDate' }
+          },
+          overdueCount: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1 }
+      },
+      {
+        $project: {
+          name: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$_id.month', 1] }, then: 'Jan' },
+                { case: { $eq: ['$_id.month', 2] }, then: 'Feb' },
+                { case: { $eq: ['$_id.month', 3] }, then: 'Mar' },
+                { case: { $eq: ['$_id.month', 4] }, then: 'Apr' },
+                { case: { $eq: ['$_id.month', 5] }, then: 'May' },
+                { case: { $eq: ['$_id.month', 6] }, then: 'Jun' },
+                { case: { $eq: ['$_id.month', 7] }, then: 'Jul' },
+                { case: { $eq: ['$_id.month', 8] }, then: 'Aug' },
+                { case: { $eq: ['$_id.month', 9] }, then: 'Sep' },
+                { case: { $eq: ['$_id.month', 10] }, then: 'Oct' },
+                { case: { $eq: ['$_id.month', 11] }, then: 'Nov' },
+                { case: { $eq: ['$_id.month', 12] }, then: 'Dec' }
+              ],
+              default: 'Unknown'
+            }
+          },
+          overdueCount: 1,
+          averageDaysOverdue: { $round: ['$averageDaysOverdue', 1] }
         }
       }
     ]);
 
-    // Convert priority aggregation to chart format
-    const priorityDistribution = priorityAggregation.map(item => {
-      const priorityColors = {
-        'urgent': '#DC2626',
-        'high': '#EF4444',
-        'medium': '#F97316',
-        'low': '#10B981'
-      };
-      
-      return {
-        name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
-        value: item.count,
-        color: priorityColors[item._id] || '#6B7280'
-      };
+    // Most overdue staff (staff with highest average days overdue)
+    const mostOverdueStaff = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed', 'ForApproval', 'rejected'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'staff'
+        }
+      },
+      { $unwind: '$staff' },
+      {
+        $group: {
+          _id: '$assignedTo',
+          staffName: { $first: '$staff.name' },
+          staffEmail: { $first: '$staff.email' },
+          overdueCount: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          },
+          maxDaysOverdue: {
+            $max: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { averageDaysOverdue: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    // Department-wise overdue statistics
+    const overdueByDepartment = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed', 'ForApproval', 'rejected'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'staff'
+        }
+      },
+      { $unwind: '$staff' },
+      {
+        $group: {
+          _id: '$staff.department',
+          count: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Overdue by category
+    const overdueByCategory = await Task.aggregate([
+      {
+        $match: {
+          dueDate: { $lt: currentDate },
+          status: { $nin: ['completed', 'ForApproval', 'rejected'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          averageDaysOverdue: {
+            $avg: {
+              $ceil: {
+                $divide: [
+                  { $subtract: [currentDate, '$dueDate'] },
+                  86400000
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Critical overdue tasks (more than 7 days overdue)
+    const criticalOverdue = overdueTasks.filter(task => {
+      const daysOverdue = Math.ceil((currentDate - new Date(task.dueDate)) / (1000 * 60 * 60 * 24));
+      return daysOverdue > 7;
+    }).length;
+
+    console.log('📊 Comprehensive Overdue Analytics Generated:', {
+      totalOverdue,
+      criticalOverdue,
+      staffWithOverdue: overdueByStaff.length,
+      trendDataPoints: overdueTrend.length
     });
 
-    // Generate trend data for the last 6 months
-    const trendData = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-      
-      const monthlyOverdue = await Task.countDocuments({
-        assignedTo: { $in: staffIds },
-        assignedBy: hodId,
-        dueDate: { $gte: monthStart, $lte: monthEnd, $lt: currentDate },
-        status: { $nin: ['completed', 'submitted'] }
-      });
-      
-      trendData.push({
-        date: date.toISOString().slice(0, 7), // YYYY-MM format
-        overdue: monthlyOverdue
-      });
-    }
-
-    // Create analytics data with real calculations
-    const analyticsData = {
-      totalOverdue: totalOverdueTasks,
-      overdueByStaff: overdueTasksAggregation.map(staff => ({
-        name: staff.staffName,
-        count: staff.overdueCount,
-        assigned: staff.tasks.length
-      })),
-      trendData,
-      priorityDistribution
-    };
-
-    res.status(200).json({
+    res.json({
       success: true,
-      data: analyticsData,
-      message: 'Analytics data retrieved successfully'
+      analytics: {
+        totalOverdue,
+        criticalOverdue,
+        overdueByStaff,
+        overdueByPriority,
+        overdueByCategory,
+        overdueByDepartment,
+        overdueTrend,
+        mostOverdueStaff,
+        summary: {
+          totalTasks: await Task.countDocuments(),
+          overduePercentage: totalOverdue > 0 ? Math.round((totalOverdue / await Task.countDocuments()) * 100) : 0,
+          averageDaysOverdue: overdueTasks.length > 0 ? 
+            Math.round(overdueTasks.reduce((sum, task) => {
+              const daysOverdue = Math.ceil((currentDate - new Date(task.dueDate)) / (1000 * 60 * 60 * 24));
+              return sum + daysOverdue;
+            }, 0) / overdueTasks.length) : 0
+        }
+      }
     });
 
   } catch (error) {
@@ -1715,6 +1894,80 @@ app.get('/api/analytics/overdue-tasks', authMiddleware, async (req, res) => {
       success: false,
       message: 'Server error while fetching analytics',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// ✅ OVERDUE TRACKING ENDPOINTS
+app.post('/api/tasks/mark-overdue', authMiddleware, async (req, res) => {
+  try {
+    // Only HOD can trigger this
+    if (req.user.role !== 'hod') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. HOD role required.'
+      });
+    }
+
+    const { markOverdueTasks } = await import('./utils/overdueTracker.js');
+    const result = await markOverdueTasks();
+    
+    res.json({
+      success: true,
+      message: 'Overdue task marking completed',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error in mark-overdue endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while marking overdue tasks',
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/tasks/tracked-analytics', authMiddleware, async (req, res) => {
+  try {
+    // Only HOD can access this
+    if (req.user.role !== 'hod') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. HOD role required.'
+      });
+    }
+
+    console.log('📊 Getting tracked analytics for HOD...');
+    const { getTrackedAnalytics } = await import('./utils/overdueTracker.js');
+    const result = await getTrackedAnalytics();
+    
+    console.log('📈 Analytics result success:', result.success);
+    if (result.success) {
+      console.log('📊 Analytics data keys:', Object.keys(result.analytics));
+      console.log('📈 Total overdue tasks:', result.analytics.totalOverdue);
+      console.log('📈 Staff with overdue tasks:', result.analytics.overdueByStaff?.length);
+    } else {
+      console.error('❌ Analytics error:', result.error);
+    }
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        analytics: result.analytics
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get tracked analytics',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error in tracked-analytics endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while getting tracked analytics',
+      error: error.message
     });
   }
 });
@@ -2059,6 +2312,17 @@ app.put('/api/requests/overdue/:requestId/reassign', authMiddleware, async (req,
     task.reassignmentReason = comments;
     task.penaltyApplied = penaltyFlag;
     task.lastModified = new Date();
+    
+    // ✅ PERMANENTLY MARK AS REALLOCATED using tracking utility
+    try {
+      // Use dynamic import properly in async context
+      const overdueTracker = await import('./utils/overdueTracker.js');
+      await overdueTracker.markTaskAsReallocated(task._id.toString(), 'Task reassigned to new staff member');
+      console.log(`🏷️ Permanently marked task ${task._id} as reallocated`);
+    } catch (error) {
+      console.error('⚠️ Error marking task as reallocated:', error);
+    }
+    
     await task.save();
 
     console.log(`✅ Task ${task._id} reassigned from ${originalStaff?.fullName} to ${newStaff.fullName}`);
@@ -2314,7 +2578,7 @@ const startServer = async () => {
   try {
     await connectDB();
     
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, async () => {
       console.log('\n🎉 ===== SERVER STARTED SUCCESSFULLY =====');
       console.log(`🚀 Server running on: http://localhost:${PORT}`);
       console.log(`📱 Frontend running on: http://localhost:5173`);
@@ -2324,6 +2588,27 @@ const startServer = async () => {
       console.log('\n💡 To see current credentials:');
       console.log(`   curl http://localhost:${PORT}/api/debug/credentials`);
       console.log('==========================================\n');
+      
+      // ✅ Start overdue task tracking
+      console.log('🔍 Starting overdue task tracking...');
+      try {
+        // Initialize the tracking utility with Task model
+        const { setTaskModel, markOverdueTasks } = await import('./utils/overdueTracker.js');
+        setTaskModel(Task); // Pass the Task model to the utility
+        
+        // Mark overdue tasks immediately on startup
+        await markOverdueTasks();
+        
+        // Set up periodic checking (every hour)
+        setInterval(async () => {
+          console.log('⏰ Periodic overdue task check...');
+          await markOverdueTasks();
+        }, 60 * 60 * 1000); // 1 hour
+        
+        console.log('✅ Overdue task tracking started');
+      } catch (error) {
+        console.error('❌ Failed to start overdue task tracking:', error);
+      }
     });
 
   } catch (error) {

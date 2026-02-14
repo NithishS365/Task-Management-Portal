@@ -20,9 +20,6 @@ export const Staff_Stat = () => {
   const location = useLocation();
   const [staff, setStaff] = useState(null);
   const [taskData, setTaskData] = useState([]);
-  // ✅ NEW: Add view mode state and raw tasks storage
-  const [viewMode, setViewMode] = useState('days'); // 'days' or 'months'
-  const [rawTasks, setRawTasks] = useState([]); // Store raw task data for reprocessing
   const [taskStats, setTaskStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -69,14 +66,7 @@ export const Staff_Stat = () => {
           console.log('✅ Performance statistics loaded successfully:', data);
           
           setTaskStats(data.statistics);
-          // ✅ Process task data based on current view mode
-          if (data.tasks) {
-            setRawTasks(data.tasks); // Store raw tasks
-            const processedData = processTaskDataByViewMode(data.tasks, viewMode);
-            setTaskData(processedData);
-          } else {
-            setTaskData(data.monthlyData || []);
-          }
+          setTaskData(data.monthlyData || []);
           setPriorityDistribution(data.priorityDistribution || {});
           setCategoryDistribution(data.categoryDistribution || {});
           setRecentRatedTasks(data.recentRatedTasks || []);
@@ -140,10 +130,6 @@ export const Staff_Stat = () => {
           };
           
           setTaskStats(stats);
-          // ✅ Process task data based on current view mode
-          setRawTasks(tasks); // Store raw tasks
-          const processedData = processTaskDataByViewMode(tasks, viewMode);
-          setTaskData(processedData);
           return true;
         } else {
           throw new Error('Failed to fetch basic statistics');
@@ -154,127 +140,6 @@ export const Staff_Stat = () => {
     } catch (error) {
       console.error('❌ Error fetching basic task statistics:', error);
       throw error;
-    }
-  };
-
-  // ✅ NEW: Function to process task data based on view mode
-  const processTaskDataByViewMode = (tasks, mode) => {
-    if (!tasks || tasks.length === 0) return [];
-
-    if (mode === 'months') {
-      // Generate monthly data
-      const currentYear = new Date().getFullYear();
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthlyData = [];
-      
-      for (let i = 0; i < 12; i++) {
-        const monthTasks = tasks.filter(task => {
-          const taskDate = new Date(task.createdAt);
-          return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
-        });
-        
-        const completed = monthTasks.filter(task => task.status === 'completed').length;
-        const pending = monthTasks.filter(task => task.status === 'pending').length;
-        const missed = monthTasks.filter(task => {
-          const dueDate = new Date(task.dueDate);
-          const now = new Date();
-          return dueDate < now && !['completed', 'ForApproval'].includes(task.status);
-        }).length;
-        
-        // Calculate average performance for month
-        const ratedTasks = monthTasks.filter(task => task.performanceScore && task.performanceScore > 0);
-        const avgPerformance = ratedTasks.length > 0 
-          ? ratedTasks.reduce((sum, task) => sum + task.performanceScore, 0) / ratedTasks.length 
-          : 0;
-        
-        monthlyData.push({
-          name: monthNames[i],
-          Completed: completed,
-          Pending: pending,
-          Missed: missed,
-          Performance: Number(avgPerformance.toFixed(1))
-        });
-      }
-      
-      return monthlyData;
-    } else {
-      // Generate daily data for the last 30 days
-      const today = new Date();
-      today.setHours(23, 59, 59, 999); // Set to end of today
-      const dailyData = [];
-      
-      for (let i = 29; i >= 0; i--) {
-        const currentDate = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
-        currentDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
-        const dayString = `Day ${currentDate.getDate()}`; // Format as "Day 14" to avoid date parsing issues
-        
-        // Filter tasks that are relevant to this day (created, due, or completed on this day)
-        const dayTasks = tasks.filter(task => {
-          const taskCreatedDate = new Date(task.createdAt);
-          const taskDueDate = task.dueDate ? new Date(task.dueDate) : null;
-          const taskCompletedDate = task.completedAt ? new Date(task.completedAt) : null;
-          
-          const currentDateString = currentDate.toDateString();
-          
-          return (
-            taskCreatedDate.toDateString() === currentDateString ||
-            (taskDueDate && taskDueDate.toDateString() === currentDateString) ||
-            (taskCompletedDate && taskCompletedDate.toDateString() === currentDateString)
-          );
-        });
-        
-        const completed = dayTasks.filter(task => {
-          if (task.status === 'completed') {
-            // Count as completed on this day if completed on this day
-            const completedDate = task.completedAt ? new Date(task.completedAt) : new Date(task.createdAt);
-            return completedDate.toDateString() === currentDate.toDateString();
-          }
-          return false;
-        }).length;
-        
-        const pending = dayTasks.filter(task => {
-          if (task.status === 'pending' || task.status === 'in-progress') {
-            // Count as pending if task was created or due on this day and still pending
-            return true;
-          }
-          return false;
-        }).length;
-        
-        const missed = dayTasks.filter(task => {
-          if (task.dueDate) {
-            const dueDate = new Date(task.dueDate);
-            const now = new Date();
-            return dueDate.toDateString() === currentDate.toDateString() && 
-                   dueDate < now && 
-                   !['completed', 'ForApproval'].includes(task.status);
-          }
-          return false;
-        }).length;
-        
-        // Calculate average performance for day
-        const ratedTasks = dayTasks.filter(task => {
-          if (task.performanceScore && task.performanceScore > 0) {
-            const completedDate = task.completedAt ? new Date(task.completedAt) : null;
-            return completedDate && completedDate.toDateString() === currentDate.toDateString();
-          }
-          return false;
-        });
-        
-        const avgPerformance = ratedTasks.length > 0 
-          ? ratedTasks.reduce((sum, task) => sum + task.performanceScore, 0) / ratedTasks.length 
-          : 0;
-        
-        dailyData.push({
-          name: dayString,
-          date: currentDate.toISOString().split('T')[0],
-          Completed: completed,
-          Pending: pending,
-          Missed: missed,
-          Performance: Number(avgPerformance.toFixed(1))
-        });
-      }
-      
-      return dailyData;
     }
   };
 
@@ -337,14 +202,6 @@ export const Staff_Stat = () => {
       setLoading(false);
     }
   }, [id, location.state]);
-
-  // ✅ NEW: useEffect to reprocess data when view mode changes
-  useEffect(() => {
-    if (rawTasks && rawTasks.length > 0) {
-      const processedData = processTaskDataByViewMode(rawTasks, viewMode);
-      setTaskData(processedData);
-    }
-  }, [viewMode, rawTasks]);
 
   if (loading) {
     return (
@@ -573,43 +430,18 @@ export const Staff_Stat = () => {
 
             <div className="flex-1 flex flex-col gap-4">
             <div className="bg-gray-50 rounded-xl p-4 shadow flex-1">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-indigo-700">
-                  Task Performance ({viewMode === 'days' ? 'Last 30 Days' : 'This Year'})
-                </h3>
-                {/* ✅ Add dropdown for view mode */}
-                <select
-                  value={viewMode}
-                  onChange={(e) => setViewMode(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="days">Last 30 Days</option>
-                  <option value="months">This Year (Months)</option>
-                </select>
-              </div>
+              <h3 className="text-lg font-bold text-indigo-700 mb-2">Monthly Task Performance (Bar Chart)</h3>
               {taskData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={taskData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={viewMode === 'days' ? -45 : 0}
-                      textAnchor={viewMode === 'days' ? 'end' : 'middle'}
-                      height={viewMode === 'days' ? 60 : 30}
-                      interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
-                    />
+                    <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#f8fafc', 
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px'
-                      }}
-                      labelFormatter={(value, payload) => {
-                        if (viewMode === 'days' && payload && payload[0]) {
-                          return `Date: ${value}`;
-                        }
-                        return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
                       }}
                     />
                     <Legend />
@@ -631,32 +463,18 @@ export const Staff_Stat = () => {
               )}
             </div>
             <div className="bg-gray-50 rounded-xl p-4 shadow flex-1">
-              <h3 className="text-lg font-bold text-indigo-700 mb-2">
-                Performance Trend ({viewMode === 'days' ? 'Last 30 Days' : 'This Year'})
-              </h3>
+              <h3 className="text-lg font-bold text-indigo-700 mb-2">Performance Trend (Area Chart)</h3>
               {taskData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={taskData}>
                     <CartesianGrid stroke="#ccc" strokeDasharray="7 5" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={viewMode === 'days' ? -45 : 0}
-                      textAnchor={viewMode === 'days' ? 'end' : 'middle'}
-                      height={viewMode === 'days' ? 60 : 30}
-                      interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
-                    />
+                    <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#f8fafc', 
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px'
-                      }}
-                      labelFormatter={(value, payload) => {
-                        if (viewMode === 'days' && payload && payload[0]) {
-                          return `Date: ${value}`;
-                        }
-                        return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
                       }}
                     />
                     <Legend />
