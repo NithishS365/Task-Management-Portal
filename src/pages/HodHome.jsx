@@ -17,7 +17,7 @@ import {
   Label,
 } from 'recharts';
 
-import '@mobiscroll/react/dist/css/mobiscroll.min.css';
+
 
 import  Header  from "../components/Header";
 import {
@@ -28,20 +28,13 @@ import {
   IoHourglassOutline,
   IoAlertCircleOutline
 } from "react-icons/io5";
-import { setOptions } from "@mobiscroll/react";
 import { ToastContainer, toast } from 'react-toastify';
-setOptions({
-  theme: 'ios',
-  themeVariant: 'light'
-});
 
 export function HodHome() {
   const [myEvents, setEvents] = useState([]);
   const [isToastOpen, setToastOpen] = useState(false);
   const [toastText, setToastText] = useState();
   const [staff, setStaff] = useState([]);
-  // ✅ NEW: Add view mode state
-  const [viewMode, setViewMode] = useState('days'); // 'days' or 'months'
 
   const myView = useMemo(() => ({ calendar: { labels: true } }), []);
 
@@ -83,79 +76,38 @@ export function HodHome() {
     fetchTasks(); // Fetch tasks when component mounts
   }, [fetchTasks]);
 
-  // Dynamic data for MixBarChart based on real tasks and view mode
+  // Dynamic data for MixBarChart based on real tasks
   const mixBarData = useMemo(() => {
-    if (viewMode === 'months') {
-      // Monthly view (existing logic)
-      const monthlyData = {};
-      const currentDate = new Date();
-      
-      // Initialize last 6 months
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-        const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-        monthlyData[monthKey] = { name: monthKey, Completed: 0, Pending: 0, Missed: 0 };
-      }
-      
-      // Process real tasks data if available
-      if (tasks && tasks.length > 0) {
-        tasks.forEach(task => {
-          const taskDate = new Date(task.completedAt || task.dueDate || task.createdAt);
-          const monthKey = taskDate.toLocaleDateString('en-US', { month: 'short' });
-          
-          if (monthlyData[monthKey]) {
-            if (task.status === 'completed') {
-              monthlyData[monthKey].Completed++;
-            } else if (task.status === 'pending' || !task.status) {
-              monthlyData[monthKey].Pending++;
-            } else if (new Date(task.dueDate) < currentDate && task.status !== 'completed') {
-              monthlyData[monthKey].Missed++;
-            }
-          }
-        });
-      }
-      
-      return Object.values(monthlyData);
-    } else {
-      // Daily view for last 30 days
-      const dailyData = {};
-      const today = new Date();
-      const currentDate = new Date();
-      
-      // Initialize last 30 days
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
-        const dayKey = `Day ${date.getDate()}`; // Format as "Day 14" to avoid date parsing issues
-        dailyData[dayKey] = { 
-          name: dayKey, 
-          date: date.toISOString().split('T')[0],
-          Completed: 0, 
-          Pending: 0, 
-          Missed: 0 
-        };
-      }
-
-      // Process real tasks data if available
-      if (tasks && tasks.length > 0) {
-        tasks.forEach(task => {
-          const taskDate = new Date(task.completedAt || task.dueDate || task.createdAt);
-          const dayKey = `Day ${taskDate.getDate()}`; // Format as "Day 14" to avoid date parsing issues
-          
-          if (dailyData[dayKey]) {
-            if (task.status === 'completed') {
-              dailyData[dayKey].Completed++;
-            } else if (task.status === 'pending' || !task.status) {
-              dailyData[dayKey].Pending++;
-            } else if (new Date(task.dueDate) < currentDate && task.status !== 'completed') {
-              dailyData[dayKey].Missed++;
-            }
-          }
-        });
-      }
-      
-      return Object.values(dailyData);
+    const monthlyData = {};
+    const currentDate = new Date();
+    
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+      monthlyData[monthKey] = { name: monthKey, Completed: 0, Pending: 0, Missed: 0 };
     }
-  }, [tasks, viewMode]);
+    
+    // Process real tasks data if available
+    if (tasks && tasks.length > 0) {
+      tasks.forEach(task => {
+        const taskDate = new Date(task.completedAt || task.dueDate || task.createdAt);
+        const monthKey = taskDate.toLocaleDateString('en-US', { month: 'short' });
+        
+        if (monthlyData[monthKey]) {
+          if (task.status === 'completed') {
+            monthlyData[monthKey].Completed++;
+          } else if (task.status === 'pending' || !task.status) {
+            monthlyData[monthKey].Pending++;
+          } else if (new Date(task.dueDate) < currentDate && task.status !== 'completed') {
+            monthlyData[monthKey].Missed++;
+          }
+        }
+      });
+    }
+    
+    return Object.values(monthlyData);
+  }, [tasks]);
 
   // Dynamic donut chart data based on task priorities
   const donutData = useMemo(() => {
@@ -533,40 +485,15 @@ export function HodHome() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {/* MixBarChart */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow flex flex-col justify-center min-h-[400px]">
-            <div className="flex justify-between items-center mb-20">
-              <h3 className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">
-                Task Progress Overview
-              </h3>
-              {/* ✅ Add dropdown for view mode */}
-              <select
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value)}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-              >
-                <option value="days">Last 30 Days</option>
-                <option value="months">Last 6 Months</option>
-              </select>
-            </div>
+            <h3 className="text-center text-indigo-600 dark:text-indigo-400 font-bold text-lg mb-20">
+              Task Progress Overview
+            </h3>
             <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={mixBarData}>
                 <CartesianGrid stroke="#4A5568" strokeDasharray="7 5" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: '#A0AEC0' }}
-                  angle={viewMode === 'days' ? -45 : 0}
-                  textAnchor={viewMode === 'days' ? 'end' : 'middle'}
-                  height={viewMode === 'days' ? 80 : 30}
-                  interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
-                />
+                <XAxis dataKey="name" tick={{ fill: '#A0AEC0' }} />
                 <YAxis tick={{ fill: '#A0AEC0' }} />
-                <Tooltip 
-                  labelFormatter={(value, payload) => {
-                    if (viewMode === 'days' && payload && payload[0]) {
-                      return `Date: ${value}`;
-                    }
-                    return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
-                  }}
-                />
+                <Tooltip />
                 <Legend />
                 <Bar dataKey="Completed" stackId="a" fill="#10B981" barSize={18} />
                 <Bar dataKey="Pending" stackId="a" fill="#3B82F6" barSize={18} />

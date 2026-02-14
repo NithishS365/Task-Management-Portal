@@ -11,23 +11,20 @@ import {
     Pie,
     Cell,
 } from 'recharts';
-import { Eventcalendar, setOptions, Toast } from '@mobiscroll/react';
-import '@mobiscroll/react/dist/css/mobiscroll.min.css';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import Header from "../components/Header";
 import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 
-setOptions({
-    theme: 'ios',
-    themeVariant: 'light',
-});
+
 
 export function Home() {
     const { tasks, loading } = useTask();
     const { user } = useAuth();
     const [myEvents, setEvents] = useState([]);
-    const [isToastOpen, setToastOpen] = useState(false);
-    const [toastText, setToastText] = useState();
+
     const [taskStats, setTaskStats] = useState({
         completed: 0,
         inProgress: 0,
@@ -36,18 +33,9 @@ export function Home() {
     });
     const [taskData, setTaskData] = useState([]);
     const [taskCategories, setTaskCategories] = useState([]);
-    // ✅ NEW: Add view mode state
-    const [viewMode, setViewMode] = useState('days'); // 'days' or 'months'
 
-    const myView = { calendar: { labels: true } };
-
-    const handleToastClose = () => {
-        setToastOpen(false);
-    };
-
-    const handleEventClick = (args) => {
-        setToastText(args.event.title);
-        setToastOpen(true);
+    const handleEventClick = (info) => {
+        alert(info.event.title);
     };
 
     // Calculate task statistics from actual data
@@ -68,50 +56,24 @@ export function Home() {
             };
             setTaskStats(stats);
 
-            // ✅ Generate data based on view mode
-            let chartData = [];
+            // Generate monthly data for charts
+            const currentYear = new Date().getFullYear();
+            const monthlyData = [];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             
-            if (viewMode === 'months') {
-                // Generate monthly data for charts
-                const currentYear = new Date().getFullYear();
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            for (let i = 0; i < 12; i++) {
+                const monthTasks = userTasks.filter(task => {
+                    const taskDate = new Date(task.createdAt);
+                    return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
+                });
                 
-                for (let i = 0; i < 12; i++) {
-                    const monthTasks = userTasks.filter(task => {
-                        const taskDate = new Date(task.createdAt);
-                        return taskDate.getFullYear() === currentYear && taskDate.getMonth() === i;
-                    });
-                    
-                    chartData.push({
-                        name: monthNames[i],
-                        Completed: monthTasks.filter(task => task.status === 'completed').length,
-                        Pending: monthTasks.filter(task => task.status !== 'completed').length
-                    });
-                }
-            } else {
-                // Generate daily data for the last 30 days
-                const today = new Date();
-                const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-                
-                for (let i = 0; i < 30; i++) {
-                    const currentDate = new Date(thirtyDaysAgo.getTime() + (i * 24 * 60 * 60 * 1000));
-                    const dayString = `Day ${currentDate.getDate()}`; // Format as "Day 14" to avoid date parsing issues
-                    
-                    const dayTasks = userTasks.filter(task => {
-                        const taskDate = new Date(task.createdAt);
-                        return taskDate.toDateString() === currentDate.toDateString();
-                    });
-                    
-                    chartData.push({
-                        name: dayString,
-                        date: currentDate.toISOString().split('T')[0], // for tooltip
-                        Completed: dayTasks.filter(task => task.status === 'completed').length,
-                        Pending: dayTasks.filter(task => task.status !== 'completed').length
-                    });
-                }
+                monthlyData.push({
+                    name: monthNames[i],
+                    Completed: monthTasks.filter(task => task.status === 'completed').length,
+                    Pending: monthTasks.filter(task => task.status !== 'completed').length
+                });
             }
-            
-            setTaskData(chartData);
+            setTaskData(monthlyData);
 
             // Generate task categories from actual data
             const categories = {};
@@ -141,7 +103,9 @@ export function Home() {
                     title: task.title,
                     start: new Date(task.dueDate),
                     end: new Date(task.dueDate),
-                    color: task.status === 'completed' ? '#10B981' : 
+                    backgroundColor: task.status === 'completed' ? '#10B981' : 
+                           task.status === 'in-progress' ? '#3B82F6' : '#EF4444',
+                    borderColor: task.status === 'completed' ? '#10B981' : 
                            task.status === 'in-progress' ? '#3B82F6' : '#EF4444',
                     allDay: true
                 }));
@@ -152,7 +116,7 @@ export function Home() {
             setTaskCategories([]);
             setEvents([]);
         }
-    }, [tasks, user, viewMode]); // ✅ Add viewMode to dependency array
+    }, [tasks, user]);
 
     // Pie chart data
     const pieData = [
@@ -226,18 +190,21 @@ export function Home() {
                             📅 Upcoming Scheduled Tasks
                         </h3>
                         <div className="h-[calc(100%-3rem)]">
-                            <Eventcalendar
-                                clickToCreate={false}
-                                dragToCreate={false}
-                                dragToMove={false}
-                                dragToResize={false}
-                                eventDelete={false}
-                                data={myEvents}
-                                view={myView}
-                                onEventClick={handleEventClick}
+                            <FullCalendar
+                                plugins={[dayGridPlugin, interactionPlugin]}
+                                initialView="dayGridMonth"
+                                events={myEvents}
+                                eventClick={handleEventClick}
+                                headerToolbar={{
+                                    left: 'prev,next today',
+                                    center: 'title',
+                                    right: ''
+                                }}
+                                height="100%"
+                                editable={false}
+                                selectable={false}
                             />
                         </div>
-                        <Toast message={toastText} isOpen={isToastOpen} onClose={handleToastClose} />
                     </div>
 
                 </div>
@@ -246,42 +213,18 @@ export function Home() {
                 <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
                     {/* Line Chart */}
                     <div className="bg-white rounded-xl p-4 shadow flex flex-col">
-                        <div className="flex items-center mb-4">
-                            <h3 className="text-indigo-600 ml-52 font-bold text-lg">
-                                Task Progress
-                            </h3>
-                            {/* ✅ Add dropdown for view mode */}
-                            <select
-                                value={viewMode}
-                                onChange={(e) => setViewMode(e.target.value)}
-                                className="px-3 py-1 ml-20 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            >
-                                <option value="days">Last 30 Days</option>
-                                <option value="months">This Year (Months)</option>
-                            </select>
-                        </div>
+                        <h3 className="text-center text-indigo-600 font-bold text-lg mb-4">
+                            Task Progress
+                        </h3>
                         <div className="flex-1 min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={taskData}>
                                     <Line type="monotone" dataKey="Completed" stroke="#10B981" strokeWidth={2} />
                                     <Line type="monotone" dataKey="Pending" stroke="#EF4444" strokeWidth={2} />
                                     <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-                                    <XAxis 
-                                        dataKey="name" 
-                                        angle={viewMode === 'days' ? 0 : 0}
-                                        textAnchor={viewMode === 'days' ? 'end' : 'middle'}
-                                        height={viewMode === 'days' ? 30 : 30}
-                                        interval={viewMode === 'days' ? 'preserveStartEnd' : 0}
-                                    />
+                                    <XAxis dataKey="name" />
                                     <YAxis />
-                                    <Tooltip 
-                                        labelFormatter={(value, payload) => {
-                                            if (viewMode === 'days' && payload && payload[0]) {
-                                                return `Date: ${value}`;
-                                            }
-                                            return viewMode === 'days' ? `Day: ${value}` : `Month: ${value}`;
-                                        }}
-                                    />
+                                    <Tooltip />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -292,6 +235,7 @@ export function Home() {
                         <h3 className="text-indigo-600 font-bold text-lg mb-4 text-center">
                             📊 Task Distribution
                         </h3>
+
                         <div className="flex items-center justify-center flex-1 min-h-0">
                             {/* Pie Chart - Optimized for label visibility */}
                             <div className="flex-1 h-full max-w-[60%]">

@@ -17,8 +17,7 @@ import {
   deleteTask, 
   getTaskStats, 
   getStaffPerformanceStats,
-  getOverdueAnalytics,
-  getHistoricalOverdueAnalytics
+  getOverdueAnalytics
 } from '../controllers/taskController.js';
 
 // Rate limiting tracker
@@ -156,30 +155,6 @@ router.get('/analytics/overdue', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch overdue analytics',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/tasks/analytics/historical-overdue
-// @desc    Get comprehensive historical overdue analytics including previously overdue tasks
-// @access  Private (HOD only)
-router.get('/analytics/historical-overdue', auth, async (req, res) => {
-  try {
-    // Check if user is HOD
-    if (req.user.role !== 'hod') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. HOD role required.'
-      });
-    }
-
-    await getHistoricalOverdueAnalytics(req, res);
-  } catch (error) {
-    console.error('❌ Historical overdue analytics route error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch historical overdue analytics',
       error: error.message
     });
   }

@@ -240,7 +240,7 @@ export const Login = () => {
                   className="w-full px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-purple-400"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-1">
-                  You can use either your username or email address
+                  You can use either your username (e.g., AIDS_HOD001) or email address
                 </p>
               </div>
 
