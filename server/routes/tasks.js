@@ -17,8 +17,7 @@ import {
   deleteTask, 
   getTaskStats, 
   getStaffPerformanceStats,
-  getOverdueAnalytics,
-  getHistoricalOverdueAnalytics
+  getOverdueAnalytics
 } from '../controllers/taskController.js';
 
 // Rate limiting tracker

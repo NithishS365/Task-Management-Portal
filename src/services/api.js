@@ -151,7 +151,7 @@ class ApiService {
   }
 
   async getOverdueAnalytics() {
-    return this.makeRequest('/tasks/analytics/overdue');
+    return this.makeRequest('/analytics/overdue-tasks');
   }
 
   async getHistoricalOverdueAnalytics() {

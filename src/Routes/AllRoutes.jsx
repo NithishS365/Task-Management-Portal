@@ -4,7 +4,6 @@ import { Route,Routes } from "react-router-dom"
 import { useState } from 'react'
 import { Card } from '../pages/Card'
 import { Staff_Stat } from '../pages/Staff_Stat'
-import { StaffAnalytics } from '../pages/StaffAnalytics'
 
 export const AllRoutes = () => {
   const datePlusTwo = new Date();
@@ -35,7 +34,6 @@ export const AllRoutes = () => {
           <Route path='allocate' element={<TaskAllocate />} />
           <Route path='allTasks' element={<AllTasks />} />
           <Route path='overdue' element={<HodOverdue />} />
-          <Route path='analytics' element={<StaffAnalytics />} />
           <Route path='profileHod' element={<ProfileHod />} />  
         </Route>
       </Routes>

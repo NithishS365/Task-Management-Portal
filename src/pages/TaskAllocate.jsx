@@ -30,7 +30,7 @@ export function TaskAllocate() {
   const { user } = useAuth();
   const { createNotification } = useNotification(); 
 
-
+  // ✅ MAIN TEST NOTIFICATION FUNCTION (matches the onClick handler)
 const testNotificationSystem = () => {
   console.log('🧪 TESTING NOTIFICATION SYSTEM');
   console.log('👤 Current HOD user:', user);
@@ -86,7 +86,7 @@ const testNotificationSystem = () => {
     toast.error(`Test failed: ${error.message}`);
   }
 };
-
+  // ✅ SECONDARY TEST FUNCTION (for the second button)
   const testNotification = () => {
     console.log('🧪 Quick test notification...');
     try {

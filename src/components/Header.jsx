@@ -258,33 +258,40 @@ const Header = () => {
                 )}
               </button>
 
-              
-                      {showNotifications && (
-                      <div className="absolute  right-0 mt-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden">
-                        
-                        {/* ✅ HEADER */}
-                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          Notifications
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          <button
-                          onClick={refreshNotifications}
-                          className="text-blue-600 hover:text-blue-700 text-sm"
-                          title="Refresh"
-                          >
-                          🔄
-                          </button>
-                          {unreadCount > 0 && (
-                          <button
-                            onClick={markAllAsRead}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                          >
-                            Mark All Read
-                          </button>
-                          )}
-                        </div>
-                        </div>
+              {/* ✅ NOTIFICATIONS DROPDOWN MENU */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden">
+                  
+                  {/* ✅ HEADER */}
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Notifications
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={refreshNotifications}
+                        className="text-blue-600 hover:text-blue-700 text-sm"
+                        title="Refresh"
+                      >
+                        🔄
+                      </button>
+                      <button
+                        onClick={sendTestNotification}
+                        className="text-green-600 hover:text-green-700 text-sm"
+                        title="Test Notification"
+                      >
+                        🧪
+                      </button>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          Mark All Read
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
                         {/* ✅ NOTIFICATIONS LIST */}
                         <div className="max-h-64 overflow-y-auto">
