@@ -6,6 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build": "echo 'No build step required for Node.js backend'",
     "dev": "nodemon server.js",
     "server:dev": "node server.js",
     "verify-data": "node scripts/verifyData.js",
