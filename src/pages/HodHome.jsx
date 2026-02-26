@@ -231,7 +231,7 @@ export function HodHome() {
   }, [tasks, staff]);
 
   return (
-<div className="p-2 h-screen bg-gray-100 dark:bg-gray-900 overflow-y-auto">
+<div className=" h-screen bg-gray-100 dark:bg-gray-900 overflow-y-auto">
       <Header />
       <ToastContainer />
       <div className="w-full  mx-auto flex flex-col gap-6 py-4 px-2">

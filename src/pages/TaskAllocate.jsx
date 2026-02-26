@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog } from "@headlessui/react";
 import  Header  from "../components/Header";
 import { ToastContainer, toast } from 'react-toastify';
 import { useTask } from '../context/Taskcontext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import apiService from '../services/api';  
+import apiService from '../services/api';
+import AITaskDescriptionGenerator from '../components/AITaskDescriptionGenerator';  
 
 
 export function TaskAllocate() {
@@ -20,6 +21,9 @@ export function TaskAllocate() {
   const [files, setFiles] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
+  
+  // Ref for auto-resizing textarea
+  const textareaRef = useRef(null);
 
   // Get functions from contexts
   const { createTask, loading } = useTask();
@@ -194,6 +198,19 @@ const testNotificationSystem = () => {
   useEffect(() => {
     loadFacultyFromAPI();
   }, []);
+
+  // Auto-resize textarea based on content
+  const autoResizeTextarea = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  };
+
+  // Auto-resize textarea when taskDesc changes
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [taskDesc]);
 
   const toggleStaffSelection = (staff) => {
     setSelectedStaff((prev) => {
@@ -420,7 +437,7 @@ const assignTask = async () => {
   };
 
   return (
-<div className="min-h-screen bg-gradient-to-br p-2 bg-gray-100 dark:from-gray-900 dark:to-gray-800">
+<div className="min-h-screen bg-gradient-to-br  bg-gray-100 dark:from-gray-900 dark:to-gray-800">
       <ToastContainer />
       <Header />
       
@@ -509,13 +526,31 @@ const assignTask = async () => {
                 </div>
 
                 {/* Task Description */}
-                <textarea
-                  placeholder="Enter detailed task description"
-                  value={taskDesc}
-                  onChange={(e) => setTaskDesc(e.target.value)}
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows="2"
-                />
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      📝 Task Description
+                    </label>
+                  </div>
+                  
+                  {/* AI Task Description Generator */}
+                  <AITaskDescriptionGenerator
+                    onGenerate={(description) => setTaskDesc(description)}
+                    isLoading={loading}
+                  />
+                  
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Enter detailed task description or use AI generator above"
+                    value={taskDesc}
+                    onChange={(e) => {
+                      setTaskDesc(e.target.value);
+                      autoResizeTextarea();
+                    }}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[100px] max-h-[400px] overflow-y-auto"
+                    style={{ height: 'auto' }}
+                  />
+                </div>
               </div>
 
               {/* File Upload */}

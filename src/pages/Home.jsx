@@ -161,7 +161,7 @@ export function Home() {
     const COLORS = ['#10B981', '#3B82F6', '#EF4444'];
 
     return (
-        <div className="h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden font-Montserrat flex flex-col">
+        <div className="h-screen  bg-gray-100 dark:bg-gray-900 overflow-hidden font-Montserrat flex flex-col">
             <Header />
             {/* Main Content */}
             <div className='p-4 flex-1 flex flex-col min-h-0'>

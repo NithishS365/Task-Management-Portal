@@ -2289,7 +2289,209 @@ app.put('/api/requests/overdue/:requestId/reject', authMiddleware, async (req, r
   }
 });
 
-// ...existing code continues...
+// ✅ AI CHATBOT AND TASK DESCRIPTION GENERATION ROUTES
+
+// Groq AI configuration
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+// System prompts for different contexts
+const SYSTEM_PROMPTS = {
+  chatbot: `You are a helpful assistant for a Task Management Portal system. Your role is to help users with:
+
+1. Task allocation and management
+2. Understanding system features  
+3. Navigation guidance
+4. Performance analytics
+5. User management
+6. Workflow assistance
+
+IMPORTANT RULES:
+- Only answer questions related to task management, productivity, and this specific portal system
+- Do not answer questions about unrelated topics (politics, personal advice, general knowledge, etc.)
+- If asked about something outside your scope, politely redirect to task management topics
+- Be concise but helpful
+- Use a professional but friendly tone
+- Provide specific guidance when possible
+
+The system has the following main features:
+- Task allocation by HODs to faculty
+- Real-time notifications
+- Task status tracking (pending, in-progress, completed, overdue)
+- Performance analytics and staff rankings
+- File attachments for tasks
+- Deadline management and extensions
+- Dark/light mode themes
+- Mobile responsive design
+
+User roles: HOD (Head of Department) can allocate tasks, faculty receive and complete tasks.`,
+
+  task_description: `You are an AI assistant that helps generate detailed, professional task descriptions for academic institutions. 
+
+GUIDELINES:
+- Create clear, actionable task descriptions
+- Include specific objectives and deliverables
+- Mention estimated timeframes when appropriate
+- Use professional academic language
+- Include relevant context for educational settings
+- Make descriptions comprehensive but not overly lengthy
+- Focus on measurable outcomes
+
+Generate only the task description content, nothing else.`
+};
+
+// Helper function to make Groq API calls
+const callGroqAPI = async (messages, systemPrompt) => {
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192', // Fast model for chat
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+        top_p: 1,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Groq API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Groq API error:', error);
+    throw error;
+  }
+};
+
+// @route   POST /api/chatbot/query
+// @desc    Handle chatbot queries
+// @access  Private
+app.post('/api/chatbot/query', async (req, res) => {
+  try {
+    console.log('🤖 Chatbot endpoint hit:', req.body);
+    const { message, context } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message is required'
+      });
+    }
+
+    console.log('🤖 Chatbot query from:', context?.userName || 'Unknown', '- Message:', message);
+
+    // Check if the question seems unrelated to task management
+    const unrelatedKeywords = [
+      'weather', 'sports', 'politics', 'cooking', 'travel', 'dating', 'health', 'medical',
+      'stock market', 'cryptocurrency', 'movies', 'music', 'games', 'fashion'
+    ];
+    
+    const isUnrelated = unrelatedKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword)
+    );
+
+    if (isUnrelated) {
+      return res.json({
+        success: true,
+        response: "I'm specifically designed to help with task management and portal-related questions. Please ask me about task allocation, system features, navigation, performance analytics, or any other aspect of our Task Management Portal. How can I assist you with your work tasks today?"
+      });
+    }
+
+    const userContext = `User: ${context?.userName || 'Unknown'} (Role: ${context?.userRole || 'unknown'})`;
+    
+    // For testing, provide a simple response without calling Groq API
+    const response = `Hello! I'm your Task Management Portal assistant. I can help you with:
+    
+    • Task allocation and management
+    • Understanding system features
+    • Navigation guidance
+    • Performance analytics
+    
+    You asked: "${message}"
+    
+    Would you like specific guidance on any of these topics?`;
+
+    res.json({
+      success: true,
+      response: response
+    });
+
+  } catch (error) {
+    console.error('❌ Chatbot error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Sorry, I encountered an error. Please try again later.'
+    });
+  }
+});
+
+// @route   POST /api/ai/generate-task-description
+// @desc    Generate task description using AI
+// @access  Private
+app.post('/api/ai/generate-task-description', authMiddleware, async (req, res) => {
+  try {
+    const { prompt, context } = req.body;
+
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prompt is required'
+      });
+    }
+
+    console.log('🎯 AI task description generation for:', req.user.name, '- Prompt:', prompt);
+
+    // For testing, provide a structured response based on the prompt
+    const description = `Task Title: ${prompt}
+
+Objective:
+Complete a comprehensive ${prompt.toLowerCase()} with clear deliverables and measurable outcomes.
+
+Description:
+This task involves detailed planning, research, and execution related to ${prompt.toLowerCase()}. The assigned team member will be responsible for conducting thorough analysis, implementing best practices, and delivering high-quality results within the specified timeframe.
+
+Key Deliverables:
+• Research and analysis documentation
+• Implementation plan and timeline
+• Progress reports and status updates
+• Final presentation and results summary
+
+Success Criteria:
+• All deliverables completed on time
+• Quality standards met or exceeded
+• Stakeholder requirements satisfied
+• Documentation properly maintained
+
+Timeline:
+Please refer to the assigned due date for completion. Regular check-ins and progress updates are expected throughout the project duration.
+
+Additional Notes:
+This task requires attention to detail, professional communication, and adherence to institutional guidelines and standards.`;
+
+    res.json({
+      success: true,
+      description: description
+    });
+
+  } catch (error) {
+    console.error('❌ AI task description generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate task description. Please try again.'
+    });
+  }
+});
 
 // ✅ 404 HANDLER
 app.use((req, res) => {

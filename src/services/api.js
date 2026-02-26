@@ -165,6 +165,21 @@ class ApiService {
   async getAllStaffPerformance() {
     return this.makeRequest('/tasks/analytics/all-staff-performance');
   }
+
+  // AI Services
+  async queryChatbot(message, context) {
+    return this.makeRequest('/chatbot/query', {
+      method: 'POST',
+      body: JSON.stringify({ message, context })
+    });
+  }
+
+  async generateTaskDescription(prompt, context) {
+    return this.makeRequest('/ai/generate-task-description', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, context })
+    });
+  }
 }
 
 //  CREATE INSTANCE
@@ -185,6 +200,10 @@ export const getOverdueAnalytics = () => apiService.getOverdueAnalytics();
 export const getHistoricalOverdueAnalytics = () => apiService.getHistoricalOverdueAnalytics();
 export const getStaffPerformanceStats = (staffId) => apiService.getStaffPerformanceStats(staffId);
 export const getAllStaffPerformance = () => apiService.getAllStaffPerformance();
+
+// AI Services
+export const queryChatbot = (message, context) => apiService.queryChatbot(message, context);
+export const generateTaskDescription = (prompt, context) => apiService.generateTaskDescription(prompt, context);
 
 //  EXPORT BOTH WAYS
 export { apiService };
