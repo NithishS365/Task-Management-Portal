@@ -26,7 +26,7 @@ export const FacultyOverview = () => {
     // Reuse existing fetch logic by calling the endpoint directly
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/users/faculty', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/faculty`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
       const data = await res.json();
@@ -53,7 +53,7 @@ export const FacultyOverview = () => {
     }
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/users', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(newStaff)
@@ -85,7 +85,7 @@ export const FacultyOverview = () => {
     setActionLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/users/${idToDelete}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${idToDelete}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -119,7 +119,7 @@ export const FacultyOverview = () => {
           throw new Error('No authentication token found');
         }
 
-        const response = await fetch('http://localhost:5000/api/users/faculty', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/users/faculty`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
