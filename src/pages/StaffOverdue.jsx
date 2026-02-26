@@ -94,7 +94,7 @@ export const StaffOverdue = () => {
       const token = sessionStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:5000/api/requests/extensions', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requests/extensions`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -188,7 +188,7 @@ export const StaffOverdue = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/requests/extensions', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requests/extensions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
