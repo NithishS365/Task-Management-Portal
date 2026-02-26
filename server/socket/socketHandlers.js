@@ -172,6 +172,7 @@ export const initializeSocket = (server) => {
       origin: [
         process.env.CLIENT_URL || "http://localhost:5173",
         "http://localhost:3000",
+        "https://taskrise-v1.vercel.app/",
         "http://localhost:5173"
       ],
       methods: ["GET", "POST", "PUT", "DELETE"],
