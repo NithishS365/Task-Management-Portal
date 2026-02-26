@@ -1,5 +1,6 @@
-!dist
 server
 scripts
-node_modules
-.env
+test-chatbot.js
+test_api.js
+*.md
+!README.md
