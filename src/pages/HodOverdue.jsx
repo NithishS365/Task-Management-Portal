@@ -653,7 +653,8 @@ export const HodOverdue = () => {
       }
 
       console.log('📊 Fetching historical overdue analytics data...');
-      const response = await fetch('http://localhost:5000/api/tasks/analytics/historical-overdue', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tasks/analytics/historical-overdue`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -752,7 +753,8 @@ export const HodOverdue = () => {
       }
 
       console.log('📋 Fetching extension requests...');
-      const response = await fetch('http://localhost:5000/api/requests/overdue', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/requests/overdue`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -784,8 +786,9 @@ export const HodOverdue = () => {
         throw new Error('No authentication token found');
       }
 
-      console.log('� Fetching staff list...');
-      const response = await fetch('http://localhost:5000/api/users', {
+      console.log('👥 Fetching staff list...');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -842,7 +845,8 @@ export const HodOverdue = () => {
         return;
       }
       
-      const response = await fetch(`http://localhost:5000/api/requests/overdue/${data.requestId}/approve`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/requests/overdue/${data.requestId}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -884,7 +888,8 @@ export const HodOverdue = () => {
         return;
       }
       
-      const response = await fetch(`http://localhost:5000/api/requests/overdue/${data.requestId}/reassign`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/requests/overdue/${data.requestId}/reassign`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -928,7 +933,8 @@ export const HodOverdue = () => {
         return;
       }
       
-      const response = await fetch(`http://localhost:5000/api/requests/overdue/${data.requestId}/reject`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/requests/overdue/${data.requestId}/reject`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

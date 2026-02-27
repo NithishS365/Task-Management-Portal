@@ -53,7 +53,8 @@ export const Staff_Stat = () => {
     try {
       console.log('📊 Fetching enhanced performance statistics for staff:', staffId);
       
-      const response = await fetch(`http://localhost:5000/api/tasks/staff/${staffId}/statistics`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tasks/staff/${staffId}/statistics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -90,7 +91,8 @@ export const Staff_Stat = () => {
   // Fallback function for basic task statistics
   const fetchBasicTaskStatistics = async (staffId, token) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/user/${staffId}`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tasks/user/${staffId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -162,7 +164,8 @@ export const Staff_Stat = () => {
           setStaff(staffData);
         } else {
           // If no state data, fetch from API using the ID
-          const response = await fetch(`http://localhost:5000/api/users/${id}`, {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          const response = await fetch(`${API_URL}/users/${id}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
