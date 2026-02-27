@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
+import { API_BASE_URL } from "../services/api";
 import {
   ResponsiveContainer,
   BarChart,
@@ -53,8 +54,7 @@ export const Staff_Stat = () => {
     try {
       console.log('📊 Fetching enhanced performance statistics for staff:', staffId);
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/tasks/staff/${staffId}/statistics`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/staff/${staffId}/statistics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -91,8 +91,7 @@ export const Staff_Stat = () => {
   // Fallback function for basic task statistics
   const fetchBasicTaskStatistics = async (staffId, token) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/tasks/user/${staffId}`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/user/${staffId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -164,8 +163,7 @@ export const Staff_Stat = () => {
           setStaff(staffData);
         } else {
           // If no state data, fetch from API using the ID
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-          const response = await fetch(`${API_URL}/users/${id}`, {
+          const response = await fetch(`${API_BASE_URL}/users/${id}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'

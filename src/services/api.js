@@ -206,5 +206,5 @@ export const queryChatbot = (message, context) => apiService.queryChatbot(messag
 export const generateTaskDescription = (prompt, context) => apiService.generateTaskDescription(prompt, context);
 
 //  EXPORT BOTH WAYS
-export { apiService };
+export { apiService, API_BASE_URL };
 export default apiService;

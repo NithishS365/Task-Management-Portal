@@ -897,3 +897,106 @@ export const getOverdueAnalytics = async (req, res) => {
     });
   }
 };
+
+// Historical Overdue Analytics (includes completed tasks that were overdue)
+export const getHistoricalOverdueAnalytics = async (req, res) => {
+  try {
+    console.log('📊 Fetching historical overdue analytics...');
+    
+    const currentDate = new Date();
+    
+    // Get currently overdue tasks
+    const currentlyOverdue = await Task.find({
+      dueDate: { $lt: currentDate },
+      status: { $nin: ['completed'] }
+    })
+    .populate('assignedTo', 'name email role department')
+    .populate('assignedBy', 'name email role department')
+    .sort({ dueDate: 1 });
+
+    // Get tasks that were completed but were overdue when completed
+    const historicallyOverdue = await Task.find({
+      status: 'completed',
+      completedAt: { $exists: true, $ne: null },
+      $expr: { $gt: ['$completedAt', '$dueDate'] }
+    })
+    .populate('assignedTo', 'name email role department')
+    .populate('assignedBy', 'name email role department')
+    .sort({ completedAt: -1 })
+    .limit(100);
+
+    const totalCurrentOverdue = currentlyOverdue.length;
+    const totalHistoricalOverdue = historicallyOverdue.length;
+
+    // Combine for overall stats
+    const allOverdueTasks = [...currentlyOverdue, ...historicallyOverdue];
+
+    // Calculate statistics
+    const overallStats = {
+      totalCurrentOverdue,
+      totalHistoricalOverdue,
+      totalOverdueEver: totalCurrentOverdue + totalHistoricalOverdue,
+      avgDaysOverdue: allOverdueTasks.length > 0 ? 
+        Math.round(allOverdueTasks.reduce((sum, task) => {
+          const dueDate = new Date(task.dueDate);
+          const completionDate = task.completedAt ? new Date(task.completedAt) : currentDate;
+          const daysOverdue = Math.max(0, Math.ceil((completionDate - dueDate) / (1000 * 60 * 60 * 24)));
+          return sum + daysOverdue;
+        }, 0) / allOverdueTasks.length) : 0
+    };
+
+    // Monthly trend data
+    const monthlyTrend = await Task.aggregate([
+      {
+        $match: {
+          $or: [
+            { dueDate: { $lt: currentDate }, status: { $nin: ['completed'] } },
+            { status: 'completed', $expr: { $gt: ['$completedAt', '$dueDate'] } }
+          ]
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: '$dueDate' },
+            year: { $year: '$dueDate' }
+          },
+          count: { $sum: 1 },
+          avgDaysOverdue: {
+            $avg: {
+              $divide: [
+                {
+                  $subtract: [
+                    { $ifNull: ['$completedAt', currentDate] },
+                    '$dueDate'
+                  ]
+                },
+                86400000
+              ]
+            }
+          }
+        }
+      },
+      { $sort: { '_id.year': -1, '_id.month': -1 } },
+      { $limit: 12 }
+    ]);
+
+    res.json({
+      success: true,
+      analytics: {
+        overallStats,
+        currentlyOverdue: currentlyOverdue.slice(0, 50),
+        historicallyOverdue: historicallyOverdue.slice(0, 50),
+        monthlyTrend
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Get historical overdue analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching historical overdue analytics',
+      error: error.message
+    });
+  }
+};

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTask } from '../context/Taskcontext';
 import { toast } from 'react-toastify';
 import Header from '../components/Header';
+import { API_BASE_URL } from '../services/api';
 import {
   BarChart,
   Bar,
@@ -653,8 +654,7 @@ export const HodOverdue = () => {
       }
 
       console.log('📊 Fetching historical overdue analytics data...');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/tasks/analytics/historical-overdue`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/analytics/historical-overdue`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -753,8 +753,7 @@ export const HodOverdue = () => {
       }
 
       console.log('📋 Fetching extension requests...');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/requests/overdue`, {
+      const response = await fetch(`${API_BASE_URL}/requests/overdue`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -787,8 +786,7 @@ export const HodOverdue = () => {
       }
 
       console.log('👥 Fetching staff list...');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/users`, {
+      const response = await fetch(`${API_BASE_URL}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -845,8 +843,7 @@ export const HodOverdue = () => {
         return;
       }
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/requests/overdue/${data.requestId}/approve`, {
+      const response = await fetch(`${API_BASE_URL}/requests/overdue/${data.requestId}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -888,8 +885,7 @@ export const HodOverdue = () => {
         return;
       }
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/requests/overdue/${data.requestId}/reassign`, {
+      const response = await fetch(`${API_BASE_URL}/requests/overdue/${data.requestId}/reassign`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -933,8 +929,7 @@ export const HodOverdue = () => {
         return;
       }
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/requests/overdue/${data.requestId}/reject`, {
+      const response = await fetch(`${API_BASE_URL}/requests/overdue/${data.requestId}/reject`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
